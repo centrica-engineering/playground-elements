@@ -48,7 +48,18 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
 
     playground-internal-tab {
       color: var(--playground-tab-bar-foreground-color, #000);
-      border-right: 4px solid var(--playground-tab-bar-background, #eaeaea);
+      border-right: 4px solid transparent;
+    }
+
+    :host([editable-file-system]) playground-internal-tab:not([data-filename="index.html"]) {
+      /* The only tab that should have a border-left is the index.html tab. */
+      border-left: 4px solid transparent;
+      margin-left: -2px;
+    }
+
+    playground-internal-tab:not(.last-tab) {
+      /* Do not add margin-right to the last tab. */
+      margin-right: -2px;
     }
 
     playground-internal-tab[active] {
@@ -59,7 +70,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       background: var(--playground-tab-bar-active-background, transparent);
     }
 
-    .drop-left {
+    :host([editable-file-system]) .drop-left:not([data-filename="index.html"]) {
       border-left: 4px solid #6200ee;
     }
 
@@ -67,9 +78,11 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       border-right: 4px solid #6200ee
     }
 
+    .drag-indicator {
+      color: var(--mdc-theme-text-disabled-on-light,rgba(0,0,0,0.2));
+    }
+
     :host([editable-file-system]) playground-internal-tab:not([data-filename="index.html"])::part(button) {
-      /* The only tab that should have a left-border is the index.html tab. */
-      border-left: 4px solid var(--playground-tab-bar-background, #eaeaea);
       /* The 24px drag indicator and menu button with opacity 0 now serve as padding-left and padding-right. */
       padding-left: 0;
       padding-right: 0;
@@ -79,10 +92,6 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       visibility: hidden;
       --mdc-icon-button-size: 24px;
       --mdc-icon-size: 24px;
-    }
-
-    .drag-indicator {
-      color: var(--mdc-theme-text-disabled-on-light,rgba(0,0,0,0.2));
     }
 
     playground-internal-tab:hover > .menu-button,
@@ -195,11 +204,12 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
         label="File selector"
       >
         ${this._visibleFiles.map(
-      ({ name, label }) =>
+      ({ name, label }, index) =>
         html`<playground-internal-tab
               .active=${name === this._activeFileName}
               data-filename=${name}
               draggable=${this.editableFileSystem && name !== "index.html"}
+              class=${index === this._visibleFiles.length - 1 ? "last-tab" : ""}
 
               @dragstart=${(event: DragEvent) => {
             this._dragged = event.target as HTMLElement;
@@ -212,6 +222,11 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
 
               @dragover=${(event: DragEvent) => {
             const target = event.target as HTMLElement;
+
+            if (target == this._dragged || !(target instanceof PlaygroundInternalTab)) {
+              return;
+            }
+
             const rect = target.getBoundingClientRect();
             const dropLeft = event.clientX < rect.left + rect.width / 2;
 
