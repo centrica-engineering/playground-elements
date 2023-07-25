@@ -193,7 +193,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
         html`<playground-internal-tab
               .active=${name === this._activeFileName}
               data-filename=${name}
-              draggable="true"
+              draggable=${name !== "index.html"}
 
               @dragstart=${(event: DragEvent) => {
             this._dragged = event.target as HTMLElement;
@@ -209,7 +209,8 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
             const rect = target.getBoundingClientRect();
             const dropLeft = event.clientX < rect.left + rect.width / 2;
 
-            if (dropLeft) {
+            // Do not indicate a drop to the left of the first file (index.html).
+            if (target.dataset["filename"] !== "index.html" && dropLeft) {
               if (!target.classList.contains("drop-left")) {
                 target.classList.add("drop-left");
               }
@@ -255,7 +256,8 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
             const rect = target.getBoundingClientRect();
             const dropLeft = event.clientX < rect.left + rect.width / 2;
 
-            if (this._project) {
+            // If the dragged file is index.html, it should always be dropped to the right of the target file.
+            if ((targetFileName !== "index.html" && this._project) || (!dropLeft && this._project)) {
               this._project.moveFileTo(draggedFileName, targetFileName, dropLeft);
             }
 
