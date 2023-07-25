@@ -48,7 +48,6 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
 
     playground-internal-tab {
       color: var(--playground-tab-bar-foreground-color, #000);
-      border-left: 4px solid var(--playground-tab-bar-background, #eaeaea);
       border-right: 4px solid var(--playground-tab-bar-background, #eaeaea);
     }
 
@@ -69,6 +68,8 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     }
 
     :host([editable-file-system]) playground-internal-tab:not([data-filename="index.html"])::part(button) {
+      /* The only tab that should have a left-border is the index.html tab. */
+      border-left: 4px solid var(--playground-tab-bar-background, #eaeaea);
       /* The 24px drag indicator and menu button with opacity 0 now serve as padding-left and padding-right. */
       padding-left: 0;
       padding-right: 0;
@@ -81,7 +82,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     }
 
     .drag-indicator {
-      color: var(--mdc-theme-text-disabled-on-light,rgba(0,0,0,.38))
+      color: var(--mdc-theme-text-disabled-on-light,rgba(0,0,0,0.2));
     }
 
     playground-internal-tab:hover > .menu-button,
@@ -270,9 +271,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
           }}
             >
             ${this.editableFileSystem && name !== 'index.html'
-            ? html`<mwc-icon class="drag-indicator">
-              drag_indicator
-              </mwc-icon>`
+            ? html`<mwc-icon class="drag-indicator">drag_indicator</mwc-icon>`
             : nothing}
               ${label || name}
               ${this.editableFileSystem && name !== 'index.html'
