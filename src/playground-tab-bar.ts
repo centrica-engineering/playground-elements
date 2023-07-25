@@ -69,14 +69,19 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     }
 
     :host([editable-file-system]) playground-internal-tab:not([data-filename="index.html"])::part(button) {
-      /* The 24px menu button with opacity 0 now serves as padding-right. */
+      /* The 24px drag indicator and menu button with opacity 0 now serve as padding-left and padding-right. */
+      padding-left: 0;
       padding-right: 0;
     }
 
     .menu-button {
       visibility: hidden;
       --mdc-icon-button-size: 24px;
-      --mdc-icon-size: 16px;
+      --mdc-icon-size: 24px;
+    }
+
+    .drag-indicator {
+      color: var(--mdc-theme-text-disabled-on-light,rgba(0,0,0,.38))
     }
 
     playground-internal-tab:hover > .menu-button,
@@ -265,7 +270,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
           }}
             >
             ${this.editableFileSystem && name !== 'index.html'
-            ? html`<mwc-icon>
+            ? html`<mwc-icon class="drag-indicator">
               drag_indicator
               </mwc-icon>`
             : nothing}
