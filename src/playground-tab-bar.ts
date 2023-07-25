@@ -193,7 +193,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
         html`<playground-internal-tab
               .active=${name === this._activeFileName}
               data-filename=${name}
-              draggable=${name !== "index.html"}
+              draggable=${this.editableFileSystem && name !== "index.html"}
 
               @dragstart=${(event: DragEvent) => {
             this._dragged = event.target as HTMLElement;
@@ -264,6 +264,11 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
             event.preventDefault();
           }}
             >
+            ${this.editableFileSystem && name !== 'index.html'
+            ? html`<mwc-icon>
+              drag_indicator
+              </mwc-icon>`
+            : nothing}
               ${label || name}
               ${this.editableFileSystem && name !== 'index.html'
             ? html`<mwc-icon-button
@@ -303,7 +308,6 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
           <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/>
         </svg>
       </mwc-icon-button>
-      
 
       <mwc-menu-surface
       fixed
@@ -321,9 +325,6 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     )}
       </mwc-list>
       </div></mwc-menu-surface>
-
-      
-
 
       ${this.editableFileSystem
         ? html`
