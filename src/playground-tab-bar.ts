@@ -232,8 +232,8 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
             const dropLeft = event.clientX < rect.left + rect.width / 2;
 
             // Do not indicate a drop to the left of the first file (index.html).
-            if (target.dataset["filename"] !== "index.html" && dropLeft) {
-              if (!target.classList.contains("drop-left")) {
+            if (dropLeft) {
+              if (target.dataset["filename"] !== "index.html" && !target.classList.contains("drop-left")) {
                 target.classList.add("drop-left");
               }
               if (target.classList.contains("drop-right")) {
