@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import {html, css, LitElement, PropertyValues} from 'lit';
-import {customElement, property, query} from 'lit/decorators.js';
+import { html, css, LitElement, PropertyValues } from 'lit';
+import { customElement, property, query } from 'lit/decorators.js';
 
 /**
  * A tab in a <playground-internal-tab-bar>.
@@ -32,7 +32,6 @@ export class PlaygroundInternalTab extends LitElement {
       background: transparent;
       display: flex;
       align-items: center;
-      cursor: pointer;
       position: relative;
       outline: none;
     }
@@ -75,7 +74,7 @@ export class PlaygroundInternalTab extends LitElement {
   /**
    * Whether this tab is currently active.
    */
-  @property({type: Boolean, reflect: true})
+  @property({ type: Boolean, reflect: true })
   active = false;
 
   @query('button')
@@ -103,8 +102,8 @@ export class PlaygroundInternalTab extends LitElement {
   override updated(changes: PropertyValues) {
     if (changes.has('active') && this.active) {
       this.dispatchEvent(
-        new CustomEvent<{tab?: PlaygroundInternalTab}>('tabchange', {
-          detail: {tab: this},
+        new CustomEvent<{ tab?: PlaygroundInternalTab }>('tabchange', {
+          detail: { tab: this },
           bubbles: true,
         })
       );

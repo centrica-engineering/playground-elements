@@ -57,10 +57,6 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       margin-left: -2px;
     }
 
-    :host([editable-file-system]) playground-internal-tab:is([data-filename="index.html"]) {
-      pointer-events: none;
-    }
-
     playground-internal-tab:not(.last-tab) {
       /* Do not add margin-right to the last tab. */
       margin-right: -2px;
@@ -90,6 +86,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       /* The 24px drag indicator and menu button with opacity 0 now serve as padding-left and padding-right. */
       padding-left: 0;
       padding-right: 0;
+      cursor: pointer;
     }
 
     .menu-button {
