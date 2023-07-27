@@ -757,22 +757,17 @@ export class PlaygroundProject extends LitElement {
 
   // This function is used to move a file after another file in the file list.
   //
-  // @param firstFilename The name of the file being moved.
-  // @param secondFilename The name of the file the first file is being moved after.
-  moveFileAfter(firstFilename: string, secondFilename: string) {
-    if (!this._files) {
-      return;
-    }
-
-    const firstIndex = this._files.findIndex((file) => file.name === firstFilename);
-    const secondIndex = this._files.findIndex((file) => file.name === secondFilename);
-
-    if (firstIndex === secondIndex) {
+  // @param firstIndex the index of the file being moved.
+  // @param secondIndex the index of the file after which the file is being moved.
+  moveFileAfter(firstIndex: number, secondIndex: number) {
+    if (!this._files ||
+      firstIndex < 0 || secondIndex < 0 ||
+      firstIndex >= this._files.length || secondIndex >= this._files.length ||
+      firstIndex === secondIndex) {
       return;
     }
 
     const file = this._files.splice(firstIndex, 1)[0];
-
     this._files.splice(secondIndex + (firstIndex < secondIndex ? 0 : 1), 0, file)
 
     this._modified = undefined;
