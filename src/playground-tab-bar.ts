@@ -204,102 +204,19 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
         html`<playground-internal-tab
               .active=${name === this._activeFileName}
               data-filename=${name}
-
-              @dragstart=${(event: DragEvent) => {
-            this._dragged = event.target as HTMLElement;
-            event.dataTransfer!.effectAllowed = "move";
-          }}
-
-              @dragend=${() => {
-            this._dragged = null;
-          }}
-
-              @dragover=${(event: DragEvent) => {
-            const target = event.target as HTMLElement;
-
-            // Don't indicate a drop zone next to the dragged element itself.
-            if (target === this._dragged) {
-              return;
-            }
-
-            const rect = target.getBoundingClientRect();
-            const dropLeft = event.clientX < rect.left + rect.width / 2;
-
-            const leftDropZone = target.previousElementSibling as HTMLElement;
-            const rightDropZone = target.nextElementSibling as HTMLElement;
-
-            if (dropLeft) {
-              rightDropZone?.classList.remove("active");
-
-              // Don't indicate a drop zone next to the dragged element itself.
-              if (leftDropZone && leftDropZone.previousElementSibling !== this._dragged) {
-                leftDropZone.classList.add("active");
-              }
-            } else {
-              leftDropZone?.classList.remove("active");
-
-              // Don't indicate a drop zone next to the dragged element itself.
-              if (rightDropZone && rightDropZone.nextElementSibling !== this._dragged) {
-                rightDropZone.classList.add("active");
-              }
-            }
-
-            this._incrementDragoverCount(event);
-          }}
-
-              @dragleave=${(event: DragEvent) => {
-            this._decrementDragoverCount(event);
-            if (this._dragoverCount === 0) {
-              const dropZone = this.shadowRoot!.querySelector(".drop-zone.active");
-              dropZone?.classList.remove("active");
-            }
-          }}
-
-              @drop=${(event: DragEvent) => {
-            const dropZone = this.shadowRoot!.querySelector(".drop-zone.active");
-
-            if (!dropZone) {
-              return;
-            }
-
-            const draggedFileName = this._dragged!.dataset["filename"]!;
-            const targetFileName = (dropZone.previousElementSibling as HTMLElement).dataset["filename"]!;
-
-            if (this._project) {
-              this._project.moveFileAfter(draggedFileName, targetFileName);
-            }
-
-            dropZone.classList.remove("active");
-
-            event.preventDefault();
-          }}
+              @dragstart=${(event: DragEvent) => this._originTabDragStart(event)}
+              @dragend=${() => this._originTabDragEnd}
+              @dragover=${(event: DragEvent) => this._targetTabDragOver(event)}
+              @dragleave=${(event: DragEvent) => this._targetTabDragLeave(event)}
+              @drop=${(event: DragEvent) => this._targetTabDrop(event)}
             >
             ${this.editableFileSystem && name !== 'index.html'
             ? html`<mwc-icon-button
                     class="drag-indicator"
-                    @mouseover=${() => {
-                const parent = this.shadowRoot!.querySelector(`[data-filename="${name}"]`) as HTMLElement;
-                parent.draggable = true
-              }}
-
-                    @mouseout=${() => {
-                const parent = this.shadowRoot!.querySelector(`[data-filename="${name}"]`) as HTMLElement;
-                parent.draggable = false;
-              }}
-
-                    @dragover=${(event: DragEvent) => {
-                if (this._dragged === null) {
-                  return;
-                }
-                this._incrementDragoverCount(event);
-              }}
-
-                    @dragleave=${(event: DragEvent) => {
-                if (this._dragged === null) {
-                  return;
-                }
-                this._decrementDragoverCount(event);
-              }}
+                    @mouseover=${() => this._dragIndicatorMouseOver(name)}
+                    @mouseout=${() => this._dragIndicatorMouseOut(name)}
+                    @dragover=${(event: DragEvent) => this._childDragOver(event)}
+                    @dragleave=${(event: DragEvent) => this._childDragLeave(event)}
                   >
                     <!-- Source: https://material.io/resources/icons/?icon=menu&style=baseline -->
                     <svg
@@ -320,20 +237,8 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
                     aria-label="File menu"
                     class="menu-button"
                     @click=${this._onOpenMenu}
-
-                    @dragover=${(event: DragEvent) => {
-                if (this._dragged === null) {
-                  return;
-                }
-                this._incrementDragoverCount(event);
-              }}
-              
-                    @dragleave=${(event: DragEvent) => {
-                if (this._dragged === null) {
-                  return;
-                }
-                this._decrementDragoverCount(event);
-              }}
+                    @dragover=${(event: DragEvent) => this._childDragOver(event)}
+                    @dragleave=${(event: DragEvent) => this._childDragLeave(event)}
                   >
                     <!-- Source: https://material.io/resources/icons/?icon=menu&style=baseline -->
                     <svg
@@ -350,39 +255,9 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
             : nothing}
             </playground-internal-tab>
             <div class="drop-zone"
-
-              @dragover=${(event: DragEvent) => {
-            const dropZone = event.target as HTMLElement;
-
-            // Don't indicate a drop zone next to the dragged element itself.
-            if (dropZone.previousElementSibling === this._dragged || dropZone.nextElementSibling === this._dragged) {
-              return;
-            }
-
-            dropZone.classList.add("active");
-
-            event.preventDefault(); // Needed for drop to work.
-          }}
-
-              @dragleave=${(event: DragEvent) => {
-            const dropZone = event.target as HTMLElement;
-            dropZone.classList.remove("active");
-          }}
-
-              @drop=${(event: DragEvent) => {
-            const dropZone = event.target as HTMLElement;
-
-            const draggedFileName = this._dragged!.dataset["filename"]!;
-            const targetFileName = (dropZone.previousElementSibling as HTMLElement).dataset["filename"]!;
-
-            if (this._project) {
-              this._project.moveFileAfter(draggedFileName, targetFileName);
-            }
-
-            dropZone.classList.remove("active");
-
-            event.preventDefault();
-          }}
+              @dragover=${(event: DragEvent) => this._dropZoneDragOver(event)}
+              @dragleave=${(event: DragEvent) => this._dropZoneDragLeave(event)}
+              @drop=${(event: DragEvent) => this._dropZoneDrop(event)}
             >
             </div>`
     )}
@@ -434,15 +309,141 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     `;
   }
 
-  private _incrementDragoverCount = (event: DragEvent) => {
+  private _originTabDragStart(event: DragEvent) {
+    this._dragged = event.target as HTMLElement;
+    event.dataTransfer!.effectAllowed = "move";
+  }
+
+  private _originTabDragEnd() {
+    this._dragged = null;
+  }
+
+  private _targetTabDragOver(event: DragEvent) {
+    const target = event.target as HTMLElement;
+
+    // Don't indicate a drop zone next to the dragged element itself.
+    if (target === this._dragged) {
+      return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    const dropLeft = event.clientX < rect.left + rect.width / 2;
+
+    const leftDropZone = target.previousElementSibling as HTMLElement;
+    const rightDropZone = target.nextElementSibling as HTMLElement;
+
+    if (dropLeft) {
+      rightDropZone?.classList.remove("active");
+
+      // Don't indicate a drop zone next to the dragged element itself.
+      if (leftDropZone && leftDropZone.previousElementSibling !== this._dragged) {
+        leftDropZone.classList.add("active");
+      }
+    } else {
+      leftDropZone?.classList.remove("active");
+
+      // Don't indicate a drop zone next to the dragged element itself.
+      if (rightDropZone && rightDropZone.nextElementSibling !== this._dragged) {
+        rightDropZone.classList.add("active");
+      }
+    }
+
+    this._incrementDragoverCount(event);
+  }
+
+  private _targetTabDragLeave(event: DragEvent) {
+    this._decrementDragoverCount(event);
+    if (this._dragoverCount === 0) {
+      const dropZone = this.shadowRoot!.querySelector(".drop-zone.active");
+      dropZone?.classList.remove("active");
+    }
+  }
+
+  private _targetTabDrop(event: DragEvent) {
+    const dropZone = this.shadowRoot!.querySelector(".drop-zone.active");
+
+    if (!dropZone) {
+      return;
+    }
+
+    const draggedFileName = this._dragged!.dataset["filename"]!;
+    const targetFileName = (dropZone.previousElementSibling as HTMLElement).dataset["filename"]!;
+
+    if (this._project) {
+      this._project.moveFileAfter(draggedFileName, targetFileName);
+    }
+
+    dropZone.classList.remove("active");
+
+    event.preventDefault();
+  }
+
+  private _dragIndicatorMouseOver(name: string) {
+    const parent = this.shadowRoot!.querySelector(`[data-filename="${name}"]`) as HTMLElement;
+    parent.draggable = true
+  }
+
+  private _dragIndicatorMouseOut(name: string) {
+    const parent = this.shadowRoot!.querySelector(`[data-filename="${name}"]`) as HTMLElement;
+    parent.draggable = false;
+  }
+
+  private _childDragOver(event: DragEvent) {
+    if (this._dragged === null) {
+      return;
+    }
+    this._incrementDragoverCount(event);
+  }
+
+  private _childDragLeave(event: DragEvent) {
+    if (this._dragged === null) {
+      return;
+    }
+    this._decrementDragoverCount(event);
+  }
+
+  private _dropZoneDragOver(event: DragEvent) {
+    const dropZone = event.target as HTMLElement;
+
+    // Don't indicate a drop zone next to the dragged element itself.
+    if (dropZone.previousElementSibling === this._dragged || dropZone.nextElementSibling === this._dragged) {
+      return;
+    }
+
+    dropZone.classList.add("active");
+
+    event.preventDefault(); // Needed for drop to work.
+  }
+
+  private _dropZoneDragLeave(event: DragEvent) {
+    const dropZone = event.target as HTMLElement;
+    dropZone.classList.remove("active");
+  }
+
+  private _dropZoneDrop(event: DragEvent) {
+    const dropZone = event.target as HTMLElement;
+
+    const draggedFileName = this._dragged!.dataset["filename"]!;
+    const targetFileName = (dropZone.previousElementSibling as HTMLElement).dataset["filename"]!;
+
+    if (this._project) {
+      this._project.moveFileAfter(draggedFileName, targetFileName);
+    }
+
+    dropZone.classList.remove("active");
+
+    event.preventDefault();
+  }
+
+  private _incrementDragoverCount(event: DragEvent) {
     event.preventDefault();
     this._dragoverCount++;
-  };
+  }
 
-  private _decrementDragoverCount = (event: DragEvent) => {
+  private _decrementDragoverCount(event: DragEvent) {
     event.preventDefault();
     this._dragoverCount--;
-  };
+  }
 
   private _onProjectFilesChanged = (event: FilesChangedEvent) => {
     this._handleFilesChanged(event.projectLoaded);
