@@ -40,28 +40,12 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     playground-internal-tab-bar {
       height: var(--playground-bar-height, 40px);
     }
-
-    playground-internal-tab::part(button) {
-      box-sizing: border-box;
-      padding: 2px 24px 0 24px;
-    }
-
+    
     playground-internal-tab {
       color: var(--playground-tab-bar-foreground-color, #000);
-      border-right: 4px solid transparent;
+      border: none;
     }
-
-    :host([editable-file-system]) playground-internal-tab:not([data-filename="index.html"]) {
-      /* The only tab that should have a border-left is the index.html tab. */
-      border-left: 4px solid transparent;
-      margin-left: -2px;
-    }
-
-    playground-internal-tab:not(.last-tab) {
-      /* Do not add margin-right to the last tab. */
-      margin-right: -2px;
-    }
-
+    
     playground-internal-tab[active] {
       color: var(
         --playground-tab-bar-active-color,
@@ -70,23 +54,21 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       background: var(--playground-tab-bar-active-background, transparent);
     }
 
-    :host([editable-file-system]) .drop-left:not([data-filename="index.html"]) {
-      border-left: 4px solid #6200ee;
-    }
-
-    .drop-right {
-      border-right: 4px solid #6200ee
-    }
-
-    .drag-indicator {
-      color: var(--mdc-theme-text-disabled-on-light,rgba(0,0,0,0.1));
+    playground-internal-tab::part(button) {
+      box-sizing: border-box;
+      padding: 0 24px 0 24px;
     }
 
     :host([editable-file-system]) playground-internal-tab:not([data-filename="index.html"])::part(button) {
       /* The 24px drag indicator and menu button with opacity 0 now serve as padding-left and padding-right. */
       padding-left: 0;
       padding-right: 0;
-      cursor: pointer;
+    }
+    
+    .drag-indicator {
+      color: var(--mdc-theme-text-disabled-on-light,rgba(0,0,0,0.1));
+      --mdc-icon-button-size: 24px;
+      --mdc-icon-size: 24px;
     }
 
     .menu-button {
@@ -102,6 +84,16 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
 
     mwc-icon-button {
       color: var(--playground-tab-bar-foreground-color);
+    }
+    
+    .drop-zone {
+      width: 8px;
+      height: 100%;
+      background-color: transparent;
+    }
+
+    .drop-zone.active {
+      background-color: #6200ee;
     }
 
     .add-file-button {
@@ -135,6 +127,9 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
 
   @state()
   private _dragged: HTMLElement | null = null;
+
+  @state()
+  private _dragoverCount = 0;
 
   @query('playground-file-system-controls')
   private _fileSystemControls?: PlaygroundFileSystemControls;
@@ -205,12 +200,10 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
         label="File selector"
       >
         ${this._visibleFiles.map(
-      ({ name, label }, index) =>
+      ({ name, label }) =>
         html`<playground-internal-tab
               .active=${name === this._activeFileName}
               data-filename=${name}
-              draggable=${this.editableFileSystem && name !== "index.html"}
-              class=${index === this._visibleFiles.length - 1 ? "last-tab" : ""}
 
               @dragstart=${(event: DragEvent) => {
             this._dragged = event.target as HTMLElement;
@@ -224,70 +217,102 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
               @dragover=${(event: DragEvent) => {
             const target = event.target as HTMLElement;
 
-            if (target == this._dragged || !(target instanceof PlaygroundInternalTab)) {
+            // Don't indicate a drop zone next to the dragged element itself.
+            if (target === this._dragged) {
               return;
             }
 
             const rect = target.getBoundingClientRect();
             const dropLeft = event.clientX < rect.left + rect.width / 2;
 
-            // Do not indicate a drop to the left of the first file (index.html).
+            const leftDropZone = target.previousElementSibling as HTMLElement;
+            const rightDropZone = target.nextElementSibling as HTMLElement;
+
             if (dropLeft) {
-              if (target.dataset["filename"] !== "index.html" && !target.classList.contains("drop-left")) {
-                target.classList.add("drop-left");
-              }
-              if (target.classList.contains("drop-right")) {
-                target.classList.remove("drop-right");
+              rightDropZone?.classList.remove("active");
+
+              // Don't indicate a drop zone next to the dragged element itself.
+              if (leftDropZone && leftDropZone.previousElementSibling !== this._dragged) {
+                leftDropZone.classList.add("active");
               }
             } else {
-              if (!target.classList.contains("drop-right")) {
-                target.classList.add("drop-right");
-              }
-              if (target.classList.contains("drop-left")) {
-                target.classList.remove("drop-left");
+              leftDropZone?.classList.remove("active");
+
+              // Don't indicate a drop zone next to the dragged element itself.
+              if (rightDropZone && rightDropZone.nextElementSibling !== this._dragged) {
+                rightDropZone.classList.add("active");
               }
             }
 
-            event.preventDefault(); // Must do to allow the @drop event to fire.
+            this._incrementDragoverCount(event);
           }}
 
               @dragleave=${(event: DragEvent) => {
-            const target = event.target as HTMLElement;
-            if (target.classList.contains("drop-left")) {
-              target.classList.remove("drop-left");
-            }
-            if (target.classList.contains("drop-right")) {
-              target.classList.remove("drop-right");
+            this._decrementDragoverCount(event);
+            if (this._dragoverCount === 0) {
+              const dropZone = this.shadowRoot!.querySelector(".drop-zone.active");
+              dropZone?.classList.remove("active");
             }
           }}
 
               @drop=${(event: DragEvent) => {
-            const target = event.target as HTMLElement;
-            if (target.classList.contains("drop-left")) {
-              target.classList.remove("drop-left");
-            }
-            if (target.classList.contains("drop-right")) {
-              target.classList.remove("drop-right");
+            const dropZone = this.shadowRoot!.querySelector(".drop-zone.active");
+
+            if (!dropZone) {
+              return;
             }
 
-            // 1. Get the dragged file name and the target file name.
             const draggedFileName = this._dragged!.dataset["filename"]!;
-            const targetFileName = target.dataset["filename"]!;
+            const targetFileName = (dropZone.previousElementSibling as HTMLElement).dataset["filename"]!;
 
-            // 2. Determine if the dragged file should be dropped to the left or right of the target file.
-            const rect = target.getBoundingClientRect();
-            const dropLeft = event.clientX < rect.left + rect.width / 2;
-
-            // If the dragged file is index.html, it should always be dropped to the right of the target file.
-            if ((targetFileName !== "index.html" && this._project) || (!dropLeft && this._project)) {
-              this._project.moveFileTo(draggedFileName, targetFileName, dropLeft);
+            if (this._project) {
+              this._project.moveFileAfter(draggedFileName, targetFileName);
             }
+
+            dropZone.classList.remove("active");
 
             event.preventDefault();
           }}
             >
             ${this.editableFileSystem && name !== 'index.html'
-            ? html`<mwc-icon class="drag-indicator">drag_indicator</mwc-icon>`
+            ? html`<mwc-icon-button
+                    class="drag-indicator"
+                    @mouseover=${() => {
+                const parent = this.shadowRoot!.querySelector(`[data-filename="${name}"]`) as HTMLElement;
+                parent.draggable = true
+              }}
+
+                    @mouseout=${() => {
+                const parent = this.shadowRoot!.querySelector(`[data-filename="${name}"]`) as HTMLElement;
+                parent.draggable = false;
+              }}
+
+                    @dragover=${(event: DragEvent) => {
+                if (this._dragged === null) {
+                  return;
+                }
+                this._incrementDragoverCount(event);
+              }}
+
+                    @dragleave=${(event: DragEvent) => {
+                if (this._dragged === null) {
+                  return;
+                }
+                this._decrementDragoverCount(event);
+              }}
+                  >
+                    <!-- Source: https://material.io/resources/icons/?icon=menu&style=baseline -->
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      fill="currentcolor"
+                    >
+                      <path
+                        d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"
+                      />
+                    </svg>
+                  </mwc-icon-button>`
             : nothing}
               ${label || name}
               ${this.editableFileSystem && name !== 'index.html'
@@ -295,6 +320,20 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
                     aria-label="File menu"
                     class="menu-button"
                     @click=${this._onOpenMenu}
+
+                    @dragover=${(event: DragEvent) => {
+                if (this._dragged === null) {
+                  return;
+                }
+                this._incrementDragoverCount(event);
+              }}
+              
+                    @dragleave=${(event: DragEvent) => {
+                if (this._dragged === null) {
+                  return;
+                }
+                this._decrementDragoverCount(event);
+              }}
                   >
                     <!-- Source: https://material.io/resources/icons/?icon=menu&style=baseline -->
                     <svg
@@ -309,7 +348,43 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
                     </svg>
                   </mwc-icon-button>`
             : nothing}
-            </playground-internal-tab>`
+            </playground-internal-tab>
+            <div class="drop-zone"
+
+              @dragover=${(event: DragEvent) => {
+            const dropZone = event.target as HTMLElement;
+
+            // Don't indicate a drop zone next to the dragged element itself.
+            if (dropZone.previousElementSibling === this._dragged || dropZone.nextElementSibling === this._dragged) {
+              return;
+            }
+
+            dropZone.classList.add("active");
+
+            event.preventDefault(); // Needed for drop to work.
+          }}
+
+              @dragleave=${(event: DragEvent) => {
+            const dropZone = event.target as HTMLElement;
+            dropZone.classList.remove("active");
+          }}
+
+              @drop=${(event: DragEvent) => {
+            const dropZone = event.target as HTMLElement;
+
+            const draggedFileName = this._dragged!.dataset["filename"]!;
+            const targetFileName = (dropZone.previousElementSibling as HTMLElement).dataset["filename"]!;
+
+            if (this._project) {
+              this._project.moveFileAfter(draggedFileName, targetFileName);
+            }
+
+            dropZone.classList.remove("active");
+
+            event.preventDefault();
+          }}
+            >
+            </div>`
     )}
       </playground-internal-tab-bar>
 
@@ -358,6 +433,16 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       }
     `;
   }
+
+  private _incrementDragoverCount = (event: DragEvent) => {
+    event.preventDefault();
+    this._dragoverCount++;
+  };
+
+  private _decrementDragoverCount = (event: DragEvent) => {
+    event.preventDefault();
+    this._dragoverCount--;
+  };
 
   private _onProjectFilesChanged = (event: FilesChangedEvent) => {
     this._handleFilesChanged(event.projectLoaded);

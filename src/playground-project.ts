@@ -755,12 +755,11 @@ export class PlaygroundProject extends LitElement {
     /* eslint-enable @typescript-eslint/no-floating-promises */
   }
 
-  // This function is called by the file editor when the user drags a file to a new position.
+  // This function is used to move a file after another file in the file list.
   //
   // @param firstFilename The name of the file being moved.
-  // @param secondFilename The name of the file it is being moved to.
-  // @param moveToLeft Whether the file is being moved to the left or right of the file it is being moved to.
-  moveFileTo(firstFilename: string, secondFilename: string, moveToLeft: boolean) {
+  // @param secondFilename The name of the file the first file is being moved after.
+  moveFileAfter(firstFilename: string, secondFilename: string) {
     if (!this._files) {
       return;
     }
@@ -768,9 +767,13 @@ export class PlaygroundProject extends LitElement {
     const firstIndex = this._files.findIndex((file) => file.name === firstFilename);
     const secondIndex = this._files.findIndex((file) => file.name === secondFilename);
 
+    if (firstIndex === secondIndex) {
+      return;
+    }
+
     const file = this._files.splice(firstIndex, 1)[0];
-    // If the first file is before the second file, we need to compensate for the fact that the first file has been removed and thus the second file is now one index lower.
-    this._files.splice(secondIndex + (moveToLeft ? 0 : 1) + (firstIndex < secondIndex ? -1 : 0), 0, file)
+
+    this._files.splice(secondIndex + (firstIndex < secondIndex ? 0 : 1), 0, file)
 
     this._modified = undefined;
     this.dispatchEvent(new FilesChangedEvent());

@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import {html, css, LitElement} from 'lit';
-import {customElement, property} from 'lit/decorators.js';
-import {ifDefined} from 'lit/directives/if-defined.js';
+import { html, css, LitElement } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 
-import {PlaygroundInternalTab} from './tab.js';
+import { PlaygroundInternalTab } from './tab.js';
 
 /**
  * A horizontal bar of tabs.
@@ -77,8 +77,8 @@ export class PlaygroundInternalTabBar extends LitElement {
       // Usually the tab itself emits the tabchange event, but we need to handle
       // the "no active tab" case here.
       this.dispatchEvent(
-        new CustomEvent<{tab?: PlaygroundInternalTab}>('tabchange', {
-          detail: {tab: undefined},
+        new CustomEvent<{ tab?: PlaygroundInternalTab }>('tabchange', {
+          detail: { tab: undefined },
           bubbles: true,
         })
       );
@@ -102,9 +102,12 @@ export class PlaygroundInternalTabBar extends LitElement {
   }
 
   private _onSlotchange(event: Event) {
-    this._tabs = (
-      event.target as HTMLSlotElement
-    ).assignedElements() as PlaygroundInternalTab[];
+    // Filter out non-tab elements (the drop zone indicators)
+    this._tabs = (event.target as HTMLSlotElement).assignedElements()
+      .filter(element => {
+        return element instanceof PlaygroundInternalTab;
+      }) as PlaygroundInternalTab[];
+
     let newActive;
     // Manage the idx and active properties on all tabs. The first tab that
     // asserts it is active wins.
@@ -156,7 +159,7 @@ export class PlaygroundInternalTabBar extends LitElement {
         this.scrollLeft -
         barRect.width / 2 +
         tabRect.width / 2;
-      this.scroll({left: centered, behavior: 'smooth'});
+      this.scroll({ left: centered, behavior: 'smooth' });
     }
   }
 
