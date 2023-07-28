@@ -218,7 +218,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
             ? html`<mwc-icon-button
                     aria-label="File menu"
                     class="menu-button"
-                    @click=${this._onOpenMenu}
+                    @click=${(event: CustomEvent) => this._onOpenMenu(name, event)}
                   >
                     <!-- Source: https://material.io/resources/icons/?icon=menu&style=baseline -->
                     <svg
@@ -258,17 +258,18 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       quick
       .open=${false}
       corner="BOTTOM_START"
-      ><div class="wrapper">
-      <mwc-list class="menu-list">
-      ${this._visibleFiles.map(({ name }) =>
-      html`
-        <mwc-list-item @click=${this._updateActive}>
-          ${name}
-        </mwc-list-item>
-      `
+      >
+        <div class="wrapper">
+          <mwc-list class="menu-list">
+          ${this._visibleFiles.map(
+      ({ name }) =>
+        html`<mwc-list-item @click=${() => this._updateActive(name)}>
+              ${name}
+            </mwc-list-item>`
     )}
-      </mwc-list>
-      </div></mwc-menu-surface>
+          </mwc-list>
+        </div>
+      </mwc-menu-surface>
 
       ${this.editableFileSystem
         ? html`
@@ -295,6 +296,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
   private _targetTabDragOver(index: number, event: DragEvent) {
     // Don't indicate a drop zone next to the dragged element itself.
     if (index === this._draggedFileIndex) {
+      this._targetFileIndex = undefined;
       return;
     }
 
@@ -356,9 +358,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
 
   private _handleFilesChanged(newProjectLoaded = false) {
     if (newProjectLoaded) {
-      const fileToSelect = this._visibleFiles.find(
-        (file) => file.selected
-      )?.name;
+      const fileToSelect = this._visibleFiles.find((file) => file.selected)?.name;
       if (fileToSelect !== undefined) {
         this._activeFileName = fileToSelect;
       }
@@ -367,12 +367,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     this.requestUpdate();
   }
 
-  private _onTabchange(
-    event: CustomEvent<{
-      tab?: PlaygroundInternalTab;
-      previous?: PlaygroundInternalTab;
-    }>
-  ) {
+  private _onTabchange(event: CustomEvent<{ tab?: PlaygroundInternalTab; previous?: PlaygroundInternalTab; }>) {
     const tab = event.detail.tab;
     if (!tab) {
       return;
@@ -385,9 +380,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     }
   }
 
-  private _onOpenTabPanel(
-    event: CustomEvent<{ index: number; anchor: HTMLElement }>
-  ) {
+  private _onOpenTabPanel(event: CustomEvent<{ index: number; anchor: HTMLElement }>) {
     const panel = this._tabPanel;
     if (!panel) {
       return;
@@ -398,10 +391,8 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     event.stopPropagation();
   }
 
-  private _updateActive(event: Event) {
-    const target = event.target as HTMLElement;
-    const name = target.innerText;
-    this._activeFileName = name;
+  private _updateActive(filename: string) {
+    this._activeFileName = filename;
     this._setNewActiveFile();
 
     if (this._tabPanel) {
@@ -409,30 +400,13 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     }
   }
 
-  private _onOpenMenu(
-    event: CustomEvent<{ index: number; anchor: HTMLElement }>
-  ) {
+  private _onOpenMenu(filename: string, event: CustomEvent<{ index: number; anchor: HTMLElement }>) {
     const controls = this._fileSystemControls;
     if (!controls) {
       return;
     }
     controls.state = 'menu';
-    // Figure out which file the open menu should be associated with. It's not
-    // necessarily the active tab, since you can click on the menu button for a
-    // tab without activating that tab.
-    //
-    // We're looking for a "data-filename" attribute in the event path, which
-    // should be on the <playground-internal-tab>.
-    //
-    // Note that we can't be sure what the target of the click event will be.
-    // Between MWC v0.25.1 and v0.25.2, when clicking on an <mwc-icon-button>,
-    // the target changed from the <mwc-icon-button> to its internal <svg>.
-    for (const el of event.composedPath()) {
-      if (el instanceof HTMLElement && el.dataset['filename']) {
-        controls.filename = el.dataset['filename'];
-        break;
-      }
-    }
+    controls.filename = filename;
     controls.anchorElement = event.target as HTMLElement;
     event.stopPropagation();
   }
@@ -451,9 +425,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     // Stay on the same filename if it's still around, even though its index
     // might have changed.
     if (this._activeFileName) {
-      const index = this._visibleFiles.findIndex(
-        (file) => file.name === this._activeFileName
-      );
+      const index = this._visibleFiles.findIndex((file) => file.name === this._activeFileName);
       if (index >= 0) {
         this._activeFileIndex = index;
         return;
