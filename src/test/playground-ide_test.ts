@@ -4,17 +4,17 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import {assert} from '@esm-bundle/chai';
-import {html, render} from 'lit';
-import {PlaygroundIde} from '../playground-ide.js';
+import { assert } from '@esm-bundle/chai';
+import { html, render } from 'lit';
+import { PlaygroundIde } from '../playground-ide.js';
 import '../playground-ide.js';
-import {sendKeys, executeServerCommand} from '@web/test-runner-commands';
+import { sendKeys, executeServerCommand } from '@web/test-runner-commands';
 
-import {ReactiveElement} from '@lit/reactive-element';
-import {PlaygroundCodeEditor} from '../playground-code-editor.js';
-import {PlaygroundProject} from '../playground-project.js';
-import {PlaygroundFileEditor} from '../playground-file-editor.js';
-import {PlaygroundPreview} from '../playground-preview.js';
+import { ReactiveElement } from '@lit/reactive-element';
+import { PlaygroundCodeEditor } from '../playground-code-editor.js';
+import { PlaygroundProject } from '../playground-project.js';
+import { PlaygroundFileEditor } from '../playground-file-editor.js';
+import { PlaygroundPreview } from '../playground-preview.js';
 
 // There is browser variability with zero width spaces. This helper keeps tests
 // consistent.
@@ -71,7 +71,7 @@ suite('playground-ide', () => {
 
   const waitForIframeLoad = (iframe: HTMLElement) =>
     new Promise<void>((resolve) => {
-      iframe.addEventListener('load', () => resolve(), {once: true});
+      iframe.addEventListener('load', () => resolve(), { once: true });
     });
 
   const assertPreviewContains = async (text: string) => {
@@ -608,14 +608,14 @@ suite('playground-ide', () => {
     assert.include(focusContainer.textContent, keyboardHelp);
 
     // Press Enter to start editing
-    focusContainer.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
+    focusContainer.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await raf();
     assert.isTrue(editableRegion.matches(':focus'));
     assert.notInclude(focusContainer.textContent, keyboardHelp);
 
     // Press Escape to stop editing
     editableRegion.dispatchEvent(
-      new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
     );
     await raf();
     assert.isTrue(focusContainer.matches(':focus'));
@@ -760,6 +760,84 @@ suite('playground-ide', () => {
     await new Promise((resolve) => requestAnimationFrame(resolve));
     assert.isFalse(ide.modified);
     assert.isFalse(ide.modified);
+  });
+
+  test('reorder files', async () => {
+    const ide = document.createElement('playground-ide');
+    ide.sandboxBaseUrl = '/';
+    ide.config = {
+      files: {
+        'index.html': {
+          content: 'Hello',
+        },
+        'package.json': {
+          content: '{"dependencies":{}}',
+        },
+        'foo.html': {
+          content: 'foo content',
+        },
+        'bar.html': {
+          content: 'bar content',
+        },
+      },
+    }
+    container.appendChild(ide);
+
+    const project = (await pierce(
+      'playground-ide',
+      'playground-project'
+    )) as PlaygroundProject;
+    // Need to defer another microtask for the config to initialize.
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    // Moving file forward.
+    project.moveFileAfter(1, 2);
+    assert.equal(project.files?.findIndex((file) => file.name === 'index.html'), 0);
+    assert.equal(project.files?.findIndex((file) => file.name === 'foo.html'), 1);
+    assert.equal(project.files?.findIndex((file) => file.name === 'package.json'), 2);
+    assert.equal(project.files?.findIndex((file) => file.name === 'bar.html'), 3);
+
+    // Moving file backward.
+    project.moveFileAfter(3, 0);
+    assert.equal(project.files?.findIndex((file) => file.name === 'index.html'), 0);
+    assert.equal(project.files?.findIndex((file) => file.name === 'bar.html'), 1);
+    assert.equal(project.files?.findIndex((file) => file.name === 'foo.html'), 2);
+    assert.equal(project.files?.findIndex((file) => file.name === 'package.json'), 3);
+
+    // Moving file out of bounds.
+    project.moveFileAfter(3, 4);
+    assert.equal(project.files?.findIndex((file) => file.name === 'index.html'), 0);
+    assert.equal(project.files?.findIndex((file) => file.name === 'bar.html'), 1);
+    assert.equal(project.files?.findIndex((file) => file.name === 'foo.html'), 2);
+    assert.equal(project.files?.findIndex((file) => file.name === 'package.json'), 3);
+
+    // Moving file to same position.
+    project.moveFileAfter(2, 2);
+    assert.equal(project.files?.findIndex((file) => file.name === 'index.html'), 0);
+    assert.equal(project.files?.findIndex((file) => file.name === 'bar.html'), 1);
+    assert.equal(project.files?.findIndex((file) => file.name === 'foo.html'), 2);
+    assert.equal(project.files?.findIndex((file) => file.name === 'package.json'), 3);
+
+    // Moving file after previous file.
+    project.moveFileAfter(2, 1);
+    assert.equal(project.files?.findIndex((file) => file.name === 'index.html'), 0);
+    assert.equal(project.files?.findIndex((file) => file.name === 'bar.html'), 1);
+    assert.equal(project.files?.findIndex((file) => file.name === 'foo.html'), 2);
+    assert.equal(project.files?.findIndex((file) => file.name === 'package.json'), 3);
+
+    // Moving out of bounds file to same position.
+    project.moveFileAfter(4, 4);
+    assert.equal(project.files?.findIndex((file) => file.name === 'index.html'), 0);
+    assert.equal(project.files?.findIndex((file) => file.name === 'bar.html'), 1);
+    assert.equal(project.files?.findIndex((file) => file.name === 'foo.html'), 2);
+    assert.equal(project.files?.findIndex((file) => file.name === 'package.json'), 3);
+
+    // Moving out of bounds file to out of bounds position.
+    project.moveFileAfter(4, 5);
+    assert.equal(project.files?.findIndex((file) => file.name === 'index.html'), 0);
+    assert.equal(project.files?.findIndex((file) => file.name === 'bar.html'), 1);
+    assert.equal(project.files?.findIndex((file) => file.name === 'foo.html'), 2);
+    assert.equal(project.files?.findIndex((file) => file.name === 'package.json'), 3);
   });
 
   test('returns the correct cursor position and index', async () => {
@@ -954,7 +1032,7 @@ suite('playground-ide', () => {
       'playground-tab-bar',
       '.menu-button > svg'
     );
-    menuButtonSvg.dispatchEvent(new Event('click', {bubbles: true}));
+    menuButtonSvg.dispatchEvent(new Event('click', { bubbles: true }));
 
     const deleteButton = await pierce(
       'playground-ide',
