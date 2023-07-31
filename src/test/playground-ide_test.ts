@@ -838,6 +838,7 @@ suite('playground-ide', () => {
     await new Promise((resolve) => requestAnimationFrame(resolve));
 
     assert.isNotNull(project);
+
     const files = project.files;
     assert.isNotNull(files);
 
@@ -871,6 +872,13 @@ suite('playground-ide', () => {
 
     // Moving out of bounds file to out of bounds position.
     project.moveFileAfter(4, 5);
+    assert.equal(files?.[0].name, 'index.html');
+    assert.equal(files?.[1].name, 'package.json');
+    assert.equal(files?.[2].name, 'foo.html');
+    assert.equal(files?.[3].name, 'bar.html');
+
+    // Moving out of bounds file to in bounds position.
+    project.moveFileAfter(4, 1);
     assert.equal(files?.[0].name, 'index.html');
     assert.equal(files?.[1].name, 'package.json');
     assert.equal(files?.[2].name, 'foo.html');
