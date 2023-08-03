@@ -4,17 +4,17 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { assert } from '@esm-bundle/chai';
-import { html, render } from 'lit';
-import { PlaygroundIde } from '../playground-ide.js';
+import {assert} from '@esm-bundle/chai';
+import {html, render} from 'lit';
+import {PlaygroundIde} from '../playground-ide.js';
 import '../playground-ide.js';
-import { sendKeys, executeServerCommand } from '@web/test-runner-commands';
+import {sendKeys, executeServerCommand} from '@web/test-runner-commands';
 
-import { ReactiveElement } from '@lit/reactive-element';
-import { PlaygroundCodeEditor } from '../playground-code-editor.js';
-import { PlaygroundProject } from '../playground-project.js';
-import { PlaygroundFileEditor } from '../playground-file-editor.js';
-import { PlaygroundPreview } from '../playground-preview.js';
+import {ReactiveElement} from '@lit/reactive-element';
+import {PlaygroundCodeEditor} from '../playground-code-editor.js';
+import {PlaygroundProject} from '../playground-project.js';
+import {PlaygroundFileEditor} from '../playground-file-editor.js';
+import {PlaygroundPreview} from '../playground-preview.js';
 
 // There is browser variability with zero width spaces. This helper keeps tests
 // consistent.
@@ -71,7 +71,7 @@ suite('playground-ide', () => {
 
   const waitForIframeLoad = (iframe: HTMLElement) =>
     new Promise<void>((resolve) => {
-      iframe.addEventListener('load', () => resolve(), { once: true });
+      iframe.addEventListener('load', () => resolve(), {once: true});
     });
 
   const assertPreviewContains = async (text: string) => {
@@ -608,14 +608,14 @@ suite('playground-ide', () => {
     assert.include(focusContainer.textContent, keyboardHelp);
 
     // Press Enter to start editing
-    focusContainer.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    focusContainer.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
     await raf();
     assert.isTrue(editableRegion.matches(':focus'));
     assert.notInclude(focusContainer.textContent, keyboardHelp);
 
     // Press Escape to stop editing
     editableRegion.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+      new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})
     );
     await raf();
     assert.isTrue(focusContainer.matches(':focus'));
@@ -780,7 +780,7 @@ suite('playground-ide', () => {
           content: 'bar content',
         },
       },
-    }
+    };
     container.appendChild(ide);
 
     const project = (await pierce(
@@ -827,7 +827,7 @@ suite('playground-ide', () => {
           content: 'bar content',
         },
       },
-    }
+    };
     container.appendChild(ide);
 
     const project = (await pierce(
@@ -1077,7 +1077,7 @@ suite('playground-ide', () => {
       'playground-tab-bar',
       '.menu-button > svg'
     );
-    menuButtonSvg.dispatchEvent(new Event('click', { bubbles: true }));
+    menuButtonSvg.dispatchEvent(new Event('click', {bubbles: true}));
 
     const deleteButton = await pierce(
       'playground-ide',

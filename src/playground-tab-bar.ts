@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { html, css, PropertyValues, nothing } from 'lit';
-import { customElement, property, state, query } from 'lit/decorators.js';
+import {html, css, PropertyValues, nothing} from 'lit';
+import {customElement, property, state, query} from 'lit/decorators.js';
 
 import '@material/mwc-icon-button';
 
@@ -14,13 +14,13 @@ import './internal/tab.js';
 import './playground-file-system-controls.js';
 import '@material/mwc-menu/mwc-menu-surface.js';
 
-import { MenuSurface } from '@material/mwc-menu/mwc-menu-surface.js';
-import { PlaygroundConnectedElement } from './playground-connected-element.js';
+import {MenuSurface} from '@material/mwc-menu/mwc-menu-surface.js';
+import {PlaygroundConnectedElement} from './playground-connected-element.js';
 
-import { PlaygroundFileEditor } from './playground-file-editor.js';
-import { PlaygroundFileSystemControls } from './playground-file-system-controls.js';
-import { FilesChangedEvent, PlaygroundProject } from './playground-project.js';
-import { PlaygroundInternalTab } from './internal/tab.js';
+import {PlaygroundFileEditor} from './playground-file-editor.js';
+import {PlaygroundFileSystemControls} from './playground-file-system-controls.js';
+import {FilesChangedEvent, PlaygroundProject} from './playground-project.js';
+import {PlaygroundInternalTab} from './internal/tab.js';
 
 /**
  * A horizontal bar of tabs for switching between playground files, with
@@ -40,7 +40,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     playground-internal-tab-bar {
       height: var(--playground-bar-height, 40px);
     }
-    
+
     playground-internal-tab {
       color: var(--playground-tab-bar-foreground-color, #000);
       border-right: 4px solid transparent;
@@ -49,7 +49,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     playground-internal-tab.drop-zone {
       border-right: 4px solid #6200ee;
     }
-    
+
     playground-internal-tab[active] {
       color: var(
         --playground-tab-bar-active-color,
@@ -64,14 +64,15 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       width: max-content;
     }
 
-    :host([editable-file-system]) playground-internal-tab:not([data-filename="index.html"])::part(button) {
+    :host([editable-file-system])
+      playground-internal-tab:not([data-filename='index.html'])::part(button) {
       /* The 24px drag indicator and menu button with opacity 0 now serve as padding-left and padding-right. */
       padding-left: 0;
       padding-right: 0;
     }
-    
+
     .drag-indicator {
-      color: var(--mdc-theme-text-disabled-on-light,rgba(0,0,0,0.1));
+      color: var(--mdc-theme-text-disabled-on-light, rgba(0, 0, 0, 0.1));
       --mdc-icon-button-size: 24px;
       --mdc-icon-size: 24px;
     }
@@ -96,7 +97,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
    * Allow the user to add, remove, and rename files in the project's virtual
    * filesystem. Disabled by default.
    */
-  @property({ type: Boolean, attribute: 'editable-file-system', reflect: true })
+  @property({type: Boolean, attribute: 'editable-file-system', reflect: true})
   editableFileSystem = false;
 
   @state()
@@ -139,7 +140,9 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       // yet.
       requestAnimationFrame(() => {
         const root = this.getRootNode() as ShadowRoot | Document;
-        this._editor = (root.getElementById(elementOrId) as PlaygroundFileEditor | null) ?? undefined;
+        this._editor =
+          (root.getElementById(elementOrId) as PlaygroundFileEditor | null) ??
+          undefined;
       });
     } else {
       this._editor = elementOrId;
@@ -147,7 +150,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
   }
 
   private get _visibleFiles() {
-    return (this._project?.files ?? []).filter(({ hidden }) => !hidden);
+    return (this._project?.files ?? []).filter(({hidden}) => !hidden);
   }
 
   override update(changedProperties: PropertyValues) {
@@ -181,21 +184,24 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
         label="File selector"
       >
         ${this._visibleFiles.map(
-      ({ name, label }, index) =>
-        html`<playground-internal-tab
+          ({name, label}, index) =>
+            html`<playground-internal-tab
               .active=${name === this._activeFileName}
               data-filename=${name}
-              draggable=${this.editableFileSystem && index === this._draggableFileIndex}
+              draggable=${this.editableFileSystem &&
+              index === this._draggableFileIndex}
               class=${index === this._targetFileIndex ? 'drop-zone' : ''}
-              
-              @dragstart=${(event: DragEvent) => this._originTabDragStart(index, event)}
+              @dragstart=${(event: DragEvent) =>
+                this._originTabDragStart(index, event)}
               @dragend=${() => this._originTabDragEnd()}
-              @dragover=${(event: DragEvent) => this._targetTabDragOver(index, event)}
-              @dragleave=${(event: DragEvent) => this._targetTabDragLeave(event)}
+              @dragover=${(event: DragEvent) =>
+                this._targetTabDragOver(index, event)}
+              @dragleave=${(event: DragEvent) =>
+                this._targetTabDragLeave(event)}
               @drop=${(event: DragEvent) => this._targetTabDrop(event)}
             >
-            ${this.editableFileSystem && name !== 'index.html'
-            ? html`<mwc-icon-button
+              ${this.editableFileSystem && name !== 'index.html'
+                ? html`<mwc-icon-button
                     class="drag-indicator"
                     @mouseover=${() => this._dragIndicatorMouseOver(index)}
                     @mouseout=${() => this._dragIndicatorMouseOut()}
@@ -212,13 +218,14 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
                       />
                     </svg>
                   </mwc-icon-button>`
-            : nothing}
+                : nothing}
               ${label || name}
               ${this.editableFileSystem && name !== 'index.html'
-            ? html`<mwc-icon-button
+                ? html`<mwc-icon-button
                     aria-label="File menu"
                     class="menu-button"
-                    @click=${(event: CustomEvent) => this._onOpenMenu(name, event)}
+                    @click=${(event: CustomEvent) =>
+                      this._onOpenMenu(name, event)}
                   >
                     <!-- Source: https://material.io/resources/icons/?icon=menu&style=baseline -->
                     <svg
@@ -232,41 +239,28 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
                       />
                     </svg>
                   </mwc-icon-button>`
-            : nothing}
+                : nothing}
             </playground-internal-tab>`
-    )}
+        )}
       </playground-internal-tab-bar>
 
-      <mwc-icon-button
-        aria-label="View tabs"
-        @click=${this._onOpenTabPanel}
-      >
+      <mwc-icon-button aria-label="View tabs" @click=${this._onOpenTabPanel}>
         <!-- Source: https://material.io/resources/icons/?icon=menu&style=baseline -->
-        <svg
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          fill="currentcolor"
-        >
-          <path d="M0 0h24v24H0z" fill="none"/>
-          <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentcolor">
+          <path d="M0 0h24v24H0z" fill="none" />
+          <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z" />
         </svg>
       </mwc-icon-button>
 
-      <mwc-menu-surface
-      fixed
-      quick
-      .open=${false}
-      corner="BOTTOM_START"
-      >
+      <mwc-menu-surface fixed quick .open=${false} corner="BOTTOM_START">
         <div class="wrapper">
           <mwc-list class="menu-list">
-          ${this._visibleFiles.map(
-      ({ name }) =>
-        html`<mwc-list-item @click=${() => this._updateActive(name)}>
-              ${name}
-            </mwc-list-item>`
-    )}
+            ${this._visibleFiles.map(
+              ({name}) =>
+                html`<mwc-list-item @click=${() => this._updateActive(name)}>
+                  ${name}
+                </mwc-list-item>`
+            )}
           </mwc-list>
         </div>
       </mwc-menu-surface>
@@ -279,14 +273,13 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
             >
             </playground-file-system-controls>
           `
-        : nothing
-      }
+        : nothing}
     `;
   }
 
   private _originTabDragStart(index: number, event: DragEvent) {
     this._draggedFileIndex = index;
-    event.dataTransfer!.effectAllowed = "move";
+    event.dataTransfer!.effectAllowed = 'move';
   }
 
   private _originTabDragEnd() {
@@ -334,7 +327,10 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
   }
 
   private _targetTabDrop(event: DragEvent) {
-    if (!this._draggedFileIndex || (!this._targetFileIndex && this._targetFileIndex !== 0)) {
+    if (
+      !this._draggedFileIndex ||
+      (!this._targetFileIndex && this._targetFileIndex !== 0)
+    ) {
       return;
     }
 
@@ -358,7 +354,9 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
 
   private _handleFilesChanged(newProjectLoaded = false) {
     if (newProjectLoaded) {
-      const fileToSelect = this._visibleFiles.find((file) => file.selected)?.name;
+      const fileToSelect = this._visibleFiles.find(
+        (file) => file.selected
+      )?.name;
       if (fileToSelect !== undefined) {
         this._activeFileName = fileToSelect;
       }
@@ -367,7 +365,12 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     this.requestUpdate();
   }
 
-  private _onTabchange(event: CustomEvent<{ tab?: PlaygroundInternalTab; previous?: PlaygroundInternalTab; }>) {
+  private _onTabchange(
+    event: CustomEvent<{
+      tab?: PlaygroundInternalTab;
+      previous?: PlaygroundInternalTab;
+    }>
+  ) {
     const tab = event.detail.tab;
     if (!tab) {
       return;
@@ -380,7 +383,9 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     }
   }
 
-  private _onOpenTabPanel(event: CustomEvent<{ index: number; anchor: HTMLElement }>) {
+  private _onOpenTabPanel(
+    event: CustomEvent<{index: number; anchor: HTMLElement}>
+  ) {
     const panel = this._tabPanel;
     if (!panel) {
       return;
@@ -400,7 +405,10 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     }
   }
 
-  private _onOpenMenu(filename: string, event: CustomEvent<{ index: number; anchor: HTMLElement }>) {
+  private _onOpenMenu(
+    filename: string,
+    event: CustomEvent<{index: number; anchor: HTMLElement}>
+  ) {
     const controls = this._fileSystemControls;
     if (!controls) {
       return;
@@ -411,7 +419,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     event.stopPropagation();
   }
 
-  private _onNewFile(event: CustomEvent<{ filename: string }>) {
+  private _onNewFile(event: CustomEvent<{filename: string}>) {
     this._activeFileName = event.detail.filename;
     // TODO(aomarks) We should focus the editor here. However,
     // CodeMirror.focus() isn't working for some reason.
@@ -425,7 +433,9 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     // Stay on the same filename if it's still around, even though its index
     // might have changed.
     if (this._activeFileName) {
-      const index = this._visibleFiles.findIndex((file) => file.name === this._activeFileName);
+      const index = this._visibleFiles.findIndex(
+        (file) => file.name === this._activeFileName
+      );
       if (index >= 0) {
         this._activeFileIndex = index;
         return;
