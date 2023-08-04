@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import {html, css, PropertyValues, nothing} from 'lit';
-import {customElement, property, state, query} from 'lit/decorators.js';
+import { html, css, PropertyValues, nothing } from 'lit';
+import { customElement, property, state, query } from 'lit/decorators.js';
 
 import '@material/mwc-icon-button';
 
@@ -14,13 +14,13 @@ import './internal/tab.js';
 import './playground-file-system-controls.js';
 import '@material/mwc-menu/mwc-menu-surface.js';
 
-import {MenuSurface} from '@material/mwc-menu/mwc-menu-surface.js';
-import {PlaygroundConnectedElement} from './playground-connected-element.js';
+import { MenuSurface } from '@material/mwc-menu/mwc-menu-surface.js';
+import { PlaygroundConnectedElement } from './playground-connected-element.js';
 
-import {PlaygroundFileEditor} from './playground-file-editor.js';
-import {PlaygroundFileSystemControls} from './playground-file-system-controls.js';
-import {FilesChangedEvent, PlaygroundProject} from './playground-project.js';
-import {PlaygroundInternalTab} from './internal/tab.js';
+import { PlaygroundFileEditor } from './playground-file-editor.js';
+import { PlaygroundFileSystemControls } from './playground-file-system-controls.js';
+import { FilesChangedEvent, PlaygroundProject } from './playground-project.js';
+import { PlaygroundInternalTab } from './internal/tab.js';
 
 /**
  * A horizontal bar of tabs for switching between playground files, with
@@ -64,13 +64,12 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       width: max-content;
     }
 
-    :host([editable-file-system])
-      playground-internal-tab:not([data-filename='index.html'])::part(button) {
+    playground-internal-tab.draggable::part(button) {
       /* The 24px drag indicator and menu button with opacity 0 now serve as padding-left and padding-right. */
-      padding-left: 0;
-      padding-right: 0;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
     }
-
+    
     .drag-indicator {
       color: var(--mdc-theme-text-disabled-on-light, rgba(0, 0, 0, 0.1));
       --mdc-icon-button-size: 24px;
@@ -97,7 +96,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
    * Allow the user to add, remove, and rename files in the project's virtual
    * filesystem. Disabled by default.
    */
-  @property({type: Boolean, attribute: 'editable-file-system', reflect: true})
+  @property({ type: Boolean, attribute: 'editable-file-system', reflect: true })
   editableFileSystem = false;
 
   @state()
@@ -150,7 +149,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
   }
 
   private get _visibleFiles() {
-    return (this._project?.files ?? []).filter(({hidden}) => !hidden);
+    return (this._project?.files ?? []).filter(({ hidden }) => !hidden);
   }
 
   override update(changedProperties: PropertyValues) {
@@ -184,24 +183,23 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
         label="File selector"
       >
         ${this._visibleFiles.map(
-          ({name, label}, index) =>
-            html`<playground-internal-tab
+      ({ name, label }, index) =>
+        html`<playground-internal-tab
               .active=${name === this._activeFileName}
               data-filename=${name}
-              draggable=${this.editableFileSystem &&
-              index === this._draggableFileIndex}
-              class=${index === this._targetFileIndex ? 'drop-zone' : ''}
+              draggable=${this.editableFileSystem && index === this._draggableFileIndex && this._visibleFiles.length > 2}
+              class=${this.editableFileSystem && this._visibleFiles.length > 2 ? `${name !== 'index.html' ? 'draggable' : ''} ${index === this._targetFileIndex ? 'drop-zone' : ''}` : ''}
               @dragstart=${(event: DragEvent) =>
-                this._originTabDragStart(index, event)}
+            this._originTabDragStart(index, event)}
               @dragend=${() => this._originTabDragEnd()}
               @dragover=${(event: DragEvent) =>
-                this._targetTabDragOver(index, event)}
+            this._targetTabDragOver(index, event)}
               @dragleave=${(event: DragEvent) =>
-                this._targetTabDragLeave(event)}
+            this._targetTabDragLeave(event)}
               @drop=${(event: DragEvent) => this._targetTabDrop(event)}
             >
-              ${this.editableFileSystem && name !== 'index.html'
-                ? html`<mwc-icon-button
+              ${this.editableFileSystem && name !== 'index.html' && this._visibleFiles.length > 2
+            ? html`<mwc-icon-button
                     class="drag-indicator"
                     @mouseover=${() => this._dragIndicatorMouseOver(index)}
                     @mouseout=${() => this._dragIndicatorMouseOut()}
@@ -218,14 +216,14 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
                       />
                     </svg>
                   </mwc-icon-button>`
-                : nothing}
+            : nothing}
               ${label || name}
               ${this.editableFileSystem && name !== 'index.html'
-                ? html`<mwc-icon-button
+            ? html`<mwc-icon-button
                     aria-label="File menu"
                     class="menu-button"
                     @click=${(event: CustomEvent) =>
-                      this._onOpenMenu(name, event)}
+                this._onOpenMenu(name, event)}
                   >
                     <!-- Source: https://material.io/resources/icons/?icon=menu&style=baseline -->
                     <svg
@@ -239,9 +237,9 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
                       />
                     </svg>
                   </mwc-icon-button>`
-                : nothing}
+            : nothing}
             </playground-internal-tab>`
-        )}
+    )}
       </playground-internal-tab-bar>
 
       <mwc-icon-button aria-label="View tabs" @click=${this._onOpenTabPanel}>
@@ -256,11 +254,11 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
         <div class="wrapper">
           <mwc-list class="menu-list">
             ${this._visibleFiles.map(
-              ({name}) =>
-                html`<mwc-list-item @click=${() => this._updateActive(name)}>
+      ({ name }) =>
+        html`<mwc-list-item @click=${() => this._updateActive(name)}>
                   ${name}
                 </mwc-list-item>`
-            )}
+    )}
           </mwc-list>
         </div>
       </mwc-menu-surface>
@@ -384,7 +382,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
   }
 
   private _onOpenTabPanel(
-    event: CustomEvent<{index: number; anchor: HTMLElement}>
+    event: CustomEvent<{ index: number; anchor: HTMLElement }>
   ) {
     const panel = this._tabPanel;
     if (!panel) {
@@ -407,7 +405,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
 
   private _onOpenMenu(
     filename: string,
-    event: CustomEvent<{index: number; anchor: HTMLElement}>
+    event: CustomEvent<{ index: number; anchor: HTMLElement }>
   ) {
     const controls = this._fileSystemControls;
     if (!controls) {
@@ -419,7 +417,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     event.stopPropagation();
   }
 
-  private _onNewFile(event: CustomEvent<{filename: string}>) {
+  private _onNewFile(event: CustomEvent<{ filename: string }>) {
     this._activeFileName = event.detail.filename;
     // TODO(aomarks) We should focus the editor here. However,
     // CodeMirror.focus() isn't working for some reason.
