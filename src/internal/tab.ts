@@ -32,7 +32,6 @@ export class PlaygroundInternalTab extends LitElement {
       background: transparent;
       display: flex;
       align-items: center;
-      cursor: pointer;
       position: relative;
       outline: none;
     }

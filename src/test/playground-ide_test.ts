@@ -762,6 +762,129 @@ suite('playground-ide', () => {
     assert.isFalse(ide.modified);
   });
 
+  test('reorder files', async () => {
+    const ide = document.createElement('playground-ide');
+    ide.sandboxBaseUrl = '/';
+    ide.config = {
+      files: {
+        'index.html': {
+          content: 'Hello',
+        },
+        'package.json': {
+          content: '{"dependencies":{}}',
+        },
+        'foo.html': {
+          content: 'foo content',
+        },
+        'bar.html': {
+          content: 'bar content',
+        },
+      },
+    };
+    container.appendChild(ide);
+
+    const project = (await pierce(
+      'playground-ide',
+      'playground-project'
+    )) as PlaygroundProject;
+    // Need to defer another microtask for the config to initialize.
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    assert.isNotNull(project);
+    const files = project.files;
+    assert.isNotNull(files);
+
+    // Moving file forward.
+    project.moveFileAfter(1, 2);
+    assert.equal(files?.[0].name, 'index.html');
+    assert.equal(files?.[1].name, 'foo.html');
+    assert.equal(files?.[2].name, 'package.json');
+    assert.equal(files?.[3].name, 'bar.html');
+
+    // Moving file backward.
+    project.moveFileAfter(3, 0);
+    assert.equal(files?.[0].name, 'index.html');
+    assert.equal(files?.[1].name, 'bar.html');
+    assert.equal(files?.[2].name, 'foo.html');
+    assert.equal(files?.[3].name, 'package.json');
+  });
+
+  test('reorder files resulting in no changes', async () => {
+    const ide = document.createElement('playground-ide');
+    ide.sandboxBaseUrl = '/';
+    ide.config = {
+      files: {
+        'index.html': {
+          content: 'Hello',
+        },
+        'package.json': {
+          content: '{"dependencies":{}}',
+        },
+        'foo.html': {
+          content: 'foo content',
+        },
+        'bar.html': {
+          content: 'bar content',
+        },
+      },
+    };
+    container.appendChild(ide);
+
+    const project = (await pierce(
+      'playground-ide',
+      'playground-project'
+    )) as PlaygroundProject;
+    // Need to defer another microtask for the config to initialize.
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    assert.isNotNull(project);
+
+    const files = project.files;
+    assert.isNotNull(files);
+
+    // Moving file out of bounds.
+    project.moveFileAfter(3, 4);
+    assert.equal(files?.[0].name, 'index.html');
+    assert.equal(files?.[1].name, 'package.json');
+    assert.equal(files?.[2].name, 'foo.html');
+    assert.equal(files?.[3].name, 'bar.html');
+
+    // Moving file to same position.
+    project.moveFileAfter(2, 2);
+    assert.equal(files?.[0].name, 'index.html');
+    assert.equal(files?.[1].name, 'package.json');
+    assert.equal(files?.[2].name, 'foo.html');
+    assert.equal(files?.[3].name, 'bar.html');
+
+    // Moving file after immediate previous file.
+    project.moveFileAfter(2, 1);
+    assert.equal(files?.[0].name, 'index.html');
+    assert.equal(files?.[1].name, 'package.json');
+    assert.equal(files?.[2].name, 'foo.html');
+    assert.equal(files?.[3].name, 'bar.html');
+
+    // Moving out of bounds file to same position.
+    project.moveFileAfter(4, 4);
+    assert.equal(files?.[0].name, 'index.html');
+    assert.equal(files?.[1].name, 'package.json');
+    assert.equal(files?.[2].name, 'foo.html');
+    assert.equal(files?.[3].name, 'bar.html');
+
+    // Moving out of bounds file to out of bounds position.
+    project.moveFileAfter(4, 5);
+    assert.equal(files?.[0].name, 'index.html');
+    assert.equal(files?.[1].name, 'package.json');
+    assert.equal(files?.[2].name, 'foo.html');
+    assert.equal(files?.[3].name, 'bar.html');
+
+    // Moving out of bounds file to in bounds position.
+    project.moveFileAfter(4, 1);
+    assert.equal(files?.[0].name, 'index.html');
+    assert.equal(files?.[1].name, 'package.json');
+    assert.equal(files?.[2].name, 'foo.html');
+    assert.equal(files?.[3].name, 'bar.html');
+  });
+
   test('returns the correct cursor position and index', async () => {
     const ide = document.createElement('playground-ide');
     ide.sandboxBaseUrl = '/';

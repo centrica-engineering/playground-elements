@@ -102,9 +102,13 @@ export class PlaygroundInternalTabBar extends LitElement {
   }
 
   private _onSlotchange(event: Event) {
-    this._tabs = (
-      event.target as HTMLSlotElement
-    ).assignedElements() as PlaygroundInternalTab[];
+    // Filter out non-tab elements (the drop zone indicators)
+    this._tabs = (event.target as HTMLSlotElement)
+      .assignedElements()
+      .filter((element) => {
+        return element instanceof PlaygroundInternalTab;
+      }) as PlaygroundInternalTab[];
+
     let newActive;
     // Manage the idx and active properties on all tabs. The first tab that
     // asserts it is active wins.
