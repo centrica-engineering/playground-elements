@@ -67,6 +67,9 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     playground-internal-tab.draggable::part(button) {
       /* The 24px drag indicator and menu button with opacity 0 now serve as padding-left and padding-right. */
       padding-left: 0 !important;
+    }
+
+    :host([editable-file-system]) playground-internal-tab:not([data-filename='index.html'])::part(button) {
       padding-right: 0 !important;
     }
     
