@@ -137,6 +137,16 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
   @state()
   private _error?: TemplateResult;
 
+  /**
+   * The scroll position of the current preview in the iframe
+   */
+  @state()
+  private _scrollPosition = [0, 0];
+
+  setScroll = (scrollPosition: number[]) => {
+    this.iframe!.contentWindow?.scrollTo(scrollPosition[0], scrollPosition[1])
+  }
+
   constructor() {
     super();
     if (navigator.serviceWorker === undefined) {
@@ -256,6 +266,8 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
 
   reload = () => {
     const iframe = this.iframe;
+    iframe?.contentWindow?.scrollX ? this._scrollPosition[0] = iframe.contentWindow.scrollX : null
+    iframe?.contentWindow?.scrollY ? this._scrollPosition[1] = iframe.contentWindow.scrollY : null
     if (!iframe) {
       return;
     }
@@ -324,6 +336,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
       this._loading = false;
       this._loadedAtLeastOnce = true;
       this._showLoadingBar = false;
+      this.setScroll(this._scrollPosition)
     }
   }
 }
