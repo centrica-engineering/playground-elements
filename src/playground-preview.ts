@@ -143,8 +143,39 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
   @state()
   private _scrollPosition = [0, 0];
 
-  setScroll = (scrollPosition: number[]) => {
-    this.iframe!.contentWindow?.scrollTo(scrollPosition[0], scrollPosition[1]);
+  setScrollPosition = (scrollPosition: number[]) => {
+    this.iframe!.contentWindow!.postMessage({scroll: scrollPosition}, '*');
+  };
+
+  getScrollPosition = async (timeout: number) => {
+    this.iframe!.contentWindow!.postMessage({action: 'getScrollPosition'}, '*');
+
+    return new Promise<number[]>((resolve, reject) => {
+      function handleMessage(event: {data: {scrollPosition: number[]}}) {
+        if (event.data.scrollPosition) {
+          window.removeEventListener('message', handleMessage);
+          resolve(event.data.scrollPosition);
+        }
+      }
+
+      window.addEventListener('message', handleMessage);
+
+      //Timeout for waiting for scroll position
+      const timeoutID = setTimeout(() => {
+        window.removeEventListener('message', handleMessage);
+        reject(new Error('Timeout while waiting for scroll position'));
+      }, timeout);
+
+      // If the correct event fires before the timeout, clear the timeout
+      window.addEventListener(
+        'message',
+        (event: {data: {scrollPosition: number[]}}) => {
+          if (event.data.scrollPosition) {
+            clearTimeout(timeoutID);
+          }
+        }
+      );
+    });
   };
 
   constructor() {
@@ -264,17 +295,25 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
     }
   }
 
-  reload = () => {
+  reload = async () => {
     const iframe = this.iframe;
-    iframe?.contentWindow?.scrollX
-      ? (this._scrollPosition[0] = iframe.contentWindow.scrollX)
-      : null;
-    iframe?.contentWindow?.scrollY
-      ? (this._scrollPosition[1] = iframe.contentWindow.scrollY)
-      : null;
     if (!iframe) {
       return;
     }
+
+    // This implementation for getting the scroll position is ok for most purposes,
+    // but overwrites quickly to the top of the page if reload is called multiple
+    // times in quick succession (such as when typing).
+    // Since the message takes a small amount of time to be recieved
+    // after it is fired, I'm not sure how you'd get around this
+    // short of waiting for one reload event to finish firing before firing the next one.
+    try {
+      const scrollPosition = await this.getScrollPosition(500);
+      this._scrollPosition = scrollPosition;
+    } catch (error) {
+      // console.log(error);
+    }
+
     // Reloading the iframe can cause a history entry to be added to the parent
     // window (on Chrome but not Firefox, and only when the parent/iframe origins
     // are different). Removing the iframe from the DOM while we initiate the
@@ -340,7 +379,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
       this._loading = false;
       this._loadedAtLeastOnce = true;
       this._showLoadingBar = false;
-      this.setScroll(this._scrollPosition);
+      this.setScrollPosition(this._scrollPosition);
     }
   }
 }
