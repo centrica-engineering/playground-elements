@@ -34,6 +34,25 @@ const indexHtml = `
 </html>
 `;
 
+const scrollScript = `
+
+  window.addEventListener('message', function (event) {
+    if (event.origin !== window.origin) {
+      return;
+    }
+    //Getting Scroll Position
+    if(event.data.action == 'getScrollPosition'){
+      currentScrollPosition = [self.scrollX, self.scrollY]
+      event.source.postMessage({scrollPosition: currentScrollPosition})
+    }
+    //Setting Scroll Position
+    scrollPosition = event.data.scroll
+    if(scrollPosition){
+      window.scrollTo(scrollPosition[0], scrollPosition[1]);
+    }
+  });
+`;
+
 test.describe('service worker', () => {
   let server: DevServer;
   let indexUrl: string;
@@ -172,7 +191,7 @@ test.describe('service worker', () => {
     version: string
   ): Promise<void> => {
     const text = await getIframeBodyText(page);
-    expect(text).toEqual(`${version} index.html`);
+    expect(text).toEqual(`${version} index.html` + scrollScript);
   };
 
   const clickReloadButton = async (page: Page): Promise<void> => {

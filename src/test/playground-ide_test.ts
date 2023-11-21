@@ -74,6 +74,14 @@ suite('playground-ide', () => {
       iframe.addEventListener('load', () => resolve(), {once: true});
     });
 
+  const waitForScroll = (iframe: HTMLIFrameElement, scrollDistance: number) =>
+    new Promise<void>((resolve) => {
+      iframe.contentWindow!.scrollBy(0, scrollDistance);
+      if (iframe.contentWindow!.scrollY === scrollDistance) {
+        resolve();
+      }
+    });
+
   const assertPreviewContains = async (text: string) => {
     const iframe = (await pierce(
       'playground-ide',
@@ -1047,6 +1055,63 @@ suite('playground-ide', () => {
     )) as HTMLIFrameElement;
 
     assert.equal(newIframe, iframe);
+  });
+
+  test('reloading preview retains scroll position', async () => {
+    render(
+      html`
+        <playground-ide sandbox-base-url="/">
+          <script type="sample/html" filename="index.html">
+            <body>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+              <p>Hello HTML 1</p>
+            </body>
+          </script>
+        </playground-ide>
+      `,
+      container
+    );
+
+    const preview = (await pierce(
+      'playground-ide',
+      'playground-preview'
+    )) as PlaygroundPreview;
+
+    const iframe = preview.iframe!;
+    await waitForIframeLoad(iframe);
+    await waitForScroll(iframe, 100);
+
+    const reloadButton = await pierce(
+      'playground-ide',
+      'playground-preview',
+      '#reload-button'
+    );
+    reloadButton.click();
+
+    const newPreview = (await pierce(
+      'playground-ide',
+      'playground-preview'
+    )) as PlaygroundPreview;
+
+    const newIframe = newPreview.iframe!;
+    await waitForIframeLoad(newIframe);
+
+    assert.equal(newIframe.contentWindow!.scrollY, 100);
   });
 
   test('delete file using menu', async () => {
