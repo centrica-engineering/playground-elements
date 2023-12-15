@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { html, css, PropertyValues, nothing, TemplateResult } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators.js';
-import { classMap } from 'lit/directives/class-map.js';
+import {html, css, PropertyValues, nothing, TemplateResult} from 'lit';
+import {customElement, property, query, state} from 'lit/decorators.js';
+import {classMap} from 'lit/directives/class-map.js';
 import '@material/mwc-icon-button';
-import { PlaygroundProject } from './playground-project.js';
+import {PlaygroundProject} from './playground-project.js';
 import '@material/mwc-linear-progress';
-import { PlaygroundConnectedElement } from './playground-connected-element.js';
+import {PlaygroundConnectedElement} from './playground-connected-element.js';
 import './internal/overlay.js';
 
 /**
@@ -114,7 +114,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
 
     iframe.achromatopsia {
       filter: url(#achromatopsia);
-    } 
+    }
 
     iframe,
     slot {
@@ -134,7 +134,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
   /**
    * The HTML file used in the preview.
    */
-  @property({ attribute: 'html-file' })
+  @property({attribute: 'html-file'})
   htmlFile = 'index.html';
 
   /**
@@ -146,7 +146,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
   /**
    * Color blindness filter to apply to the preview.
    */
-  @property({ attribute: 'color-blindness' })
+  @property({attribute: 'color-blindness'})
   colorBlindness?: string;
 
   @query('iframe', true)
@@ -259,7 +259,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
         </mwc-icon-button>
       </div>
 
-      <div id="content" class=${classMap({ error: !!this._error })}>
+      <div id="content" class=${classMap({error: !!this._error})}>
         <mwc-linear-progress
           aria-hidden=${this._loading ? 'false' : 'true'}
           part="preview-loading-indicator"
@@ -272,60 +272,83 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
         <svg id="color-blindness">
           <defs>
             <filter id="protanopia">
-              <feColorMatrix type="matrix" source="SourceGraphic"
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
                 values="0.567, 0.433, 0, 0, 0
                         0.558, 0.442, 0, 0, 0
                         0,     0.242, 0.758, 0, 0
-                        0,     0,     0,     1, 0" />
+                        0,     0,     0,     1, 0"
+              />
             </filter>
             <filter id="protanomaly">
-              <feColorMatrix type="matrix" source="SourceGraphic"
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
                 values="0.817, 0.183, 0, 0, 0
                         0.333, 0.667, 0, 0, 0
                         0,     0.125, 0.875, 0, 0
-                        0,     0,     0,     1, 0" />
+                        0,     0,     0,     1, 0"
+              />
             </filter>
             <filter id="deuteranopia">
-              <feColorMatrix type="matrix" source="SourceGraphic"
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
                 values="0.625, 0.375, 0, 0, 0
                         0.7,   0.3,   0, 0, 0
                         0,     0.3,   0.7, 0, 0
-                        0,     0,     0,     1, 0" />
+                        0,     0,     0,     1, 0"
+              />
             </filter>
             <filter id="deuteranomaly">
-              <feColorMatrix type="matrix" source="SourceGraphic"
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
                 values="0.8,   0.2,   0, 0, 0
                         0.258, 0.742, 0, 0, 0
                         0,     0.142, 0.858, 0, 0
-                        0,     0,     0,     1, 0" />
+                        0,     0,     0,     1, 0"
+              />
             </filter>
             <filter id="tritanopia">
-              <feColorMatrix type="matrix" source="SourceGraphic"
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
                 values="0.95,  0.05,  0,     0, 0
                         0,     0.433, 0.567, 0, 0
                         0,     0.475, 0.525, 0, 0
-                        0,     0,     0,     1, 0" />
+                        0,     0,     0,     1, 0"
+              />
             </filter>
             <filter id="tritanomaly">
-              <feColorMatrix type="matrix" source="SourceGraphic"
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
                 values="0.967, 0.033, 0,     0, 0
                         0,     0.733, 0.267, 0, 0
                         0,     0.183, 0.817, 0, 0
-                        0,     0,     0,     1, 0" />
+                        0,     0,     0,     1, 0"
+              />
             </filter>
             <filter id="achromatopsia">
-              <feColorMatrix type="matrix" source="SourceGraphic"
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
                 values="0.299, 0.587, 0.114, 0, 0
                         0.299, 0.587, 0.114, 0, 0
                         0.299, 0.587, 0.114, 0, 0
-                        0,     0,     0,     1, 0" />
+                        0,     0,     0,     1, 0"
+              />
             </filter>
           </defs>
         </svg>
 
         <iframe
           part="preview-iframe"
-          class=${classMap({ [this.colorBlindness || '']: !!this.colorBlindness })}
+          class=${classMap({
+            [this.colorBlindness || '']: !!this.colorBlindness,
+          })}
           title="Project preview"
           @load=${this._onIframeLoad}
           ?hidden=${!this._loadedAtLeastOnce}
@@ -361,7 +384,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
     // window (on Chrome but not Firefox, and only when the parent/iframe origins
     // are different). Removing the iframe from the DOM while we initiate the
     // reload prevents a history entry from being added.
-    const { parentNode, nextSibling } = iframe;
+    const {parentNode, nextSibling} = iframe;
     if (parentNode) {
       iframe.remove();
     }
@@ -396,7 +419,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
   }
 
   private _slotHasAnyVisibleChildren() {
-    const assigned = this._slot?.assignedNodes({ flatten: true });
+    const assigned = this._slot?.assignedNodes({flatten: true});
     if (!assigned) {
       return false;
     }
