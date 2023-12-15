@@ -80,6 +80,42 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
       --mdc-theme-primary: var(--playground-highlight-color, #6200ee);
     }
 
+    #color-blindness {
+      height: 0;
+      width: 0;
+      position: absolute;
+      top: -100px;
+      left: -100px;
+    }
+
+    iframe.protanopia {
+      filter: url(#protanopia);
+    }
+
+    iframe.protanomaly {
+      filter: url(#protanomaly);
+    }
+
+    iframe.deuteranopia {
+      filter: url(#deuteranopia);
+    }
+
+    iframe.deuteranomaly {
+      filter: url(#deuteranomaly);
+    }
+
+    iframe.tritanopia {
+      filter: url(#tritanopia);
+    }
+
+    iframe.tritanomaly {
+      filter: url(#tritanomaly);
+    }
+
+    iframe.achromatopsia {
+      filter: url(#achromatopsia);
+    }
+
     iframe,
     slot {
       width: 100%;
@@ -106,6 +142,12 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
    */
   @property()
   location = 'Result';
+
+  /**
+   * Color blindness filter to apply to the preview.
+   */
+  @property({attribute: 'color-blindness'})
+  colorBlindness?: string;
 
   @query('iframe', true)
   iframe!: HTMLIFrameElement | null;
@@ -227,7 +269,86 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
 
         ${this._loadedAtLeastOnce ? nothing : html`<slot></slot>`}
 
+        <svg id="color-blindness">
+          <defs>
+            <filter id="protanopia">
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
+                values="0.567, 0.433, 0, 0, 0
+                        0.558, 0.442, 0, 0, 0
+                        0,     0.242, 0.758, 0, 0
+                        0,     0,     0,     1, 0"
+              />
+            </filter>
+            <filter id="protanomaly">
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
+                values="0.817, 0.183, 0, 0, 0
+                        0.333, 0.667, 0, 0, 0
+                        0,     0.125, 0.875, 0, 0
+                        0,     0,     0,     1, 0"
+              />
+            </filter>
+            <filter id="deuteranopia">
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
+                values="0.625, 0.375, 0, 0, 0
+                        0.7,   0.3,   0, 0, 0
+                        0,     0.3,   0.7, 0, 0
+                        0,     0,     0,     1, 0"
+              />
+            </filter>
+            <filter id="deuteranomaly">
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
+                values="0.8,   0.2,   0, 0, 0
+                        0.258, 0.742, 0, 0, 0
+                        0,     0.142, 0.858, 0, 0
+                        0,     0,     0,     1, 0"
+              />
+            </filter>
+            <filter id="tritanopia">
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
+                values="0.95,  0.05,  0,     0, 0
+                        0,     0.433, 0.567, 0, 0
+                        0,     0.475, 0.525, 0, 0
+                        0,     0,     0,     1, 0"
+              />
+            </filter>
+            <filter id="tritanomaly">
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
+                values="0.967, 0.033, 0,     0, 0
+                        0,     0.733, 0.267, 0, 0
+                        0,     0.183, 0.817, 0, 0
+                        0,     0,     0,     1, 0"
+              />
+            </filter>
+            <filter id="achromatopsia">
+              <feColorMatrix
+                type="matrix"
+                source="SourceGraphic"
+                values="0.299, 0.587, 0.114, 0, 0
+                        0.299, 0.587, 0.114, 0, 0
+                        0.299, 0.587, 0.114, 0, 0
+                        0,     0,     0,     1, 0"
+              />
+            </filter>
+          </defs>
+        </svg>
+
         <iframe
+          part="preview-iframe"
+          class=${classMap({
+            [this.colorBlindness || '']: !!this.colorBlindness,
+          })}
           title="Project preview"
           @load=${this._onIframeLoad}
           ?hidden=${!this._loadedAtLeastOnce}
