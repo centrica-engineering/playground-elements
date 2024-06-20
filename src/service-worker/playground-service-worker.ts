@@ -21,6 +21,25 @@ declare var self: ServiceWorkerGlobalScope;
 
 type SessionID = string;
 
+const scrollScript = `
+<script>
+  window.addEventListener('message', function (event) {
+    if (event.origin !== window.origin) {
+      return;
+    }
+    //Getting Scroll Position
+    if(event.data.action == 'getScrollPosition'){
+      currentScrollPosition = [self.scrollX, self.scrollY]
+      event.source.postMessage({scrollPosition: currentScrollPosition})
+    }
+    //Setting Scroll Position
+    scrollPosition = event.data.scroll
+    if(scrollPosition){
+      window.scrollTo(scrollPosition[0], scrollPosition[1]);
+    }
+  });
+</script>`;
+
 /**
  * A collection of FileAPI objects registered by <playground-project> instances,
  * keyed by session ID.
@@ -114,6 +133,10 @@ const getFile = async (_e: FetchEvent, path: string, sessionId: SessionID) => {
   headers.set('Origin-Agent-Cluster', '?1');
   if (contentType) {
     headers.set('Content-Type', contentType);
+  }
+
+  if (contentType?.match('text/html')) {
+    return new Response(content + scrollScript, {headers});
   }
   return new Response(content, {headers});
 };
