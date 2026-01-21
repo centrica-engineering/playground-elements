@@ -17,11 +17,11 @@
 /playground-*.d.ts
 /playground-*.d.ts.map
 /test/
+/test-results/
 /_codemirror/
 /themes/
 /src/themes/
 /src/_codemirror/codemirror-styles.ts
-/src/configurator/themes.ts
 .tsbuildinfo
 /playground-service-worker.*
 /playground-service-worker-proxy.*

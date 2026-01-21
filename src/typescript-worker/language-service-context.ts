@@ -72,7 +72,7 @@ class WorkerLanguageServiceHost implements ts.LanguageServiceHost {
       file.content = content;
       file.version += 1;
     } else {
-      this.files.set(fileName, { content, version: 0 });
+      this.files.set(fileName, {content, version: 0});
     }
   }
 

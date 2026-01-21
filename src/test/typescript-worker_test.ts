@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { checkTransform } from './worker-test-util.js';
+import {checkTransform} from './worker-test-util.js';
 
-import { BuildOutput, SampleFile } from '../shared/worker-api.js';
-import { CdnData } from './fake-cdn-plugin.js';
+import {BuildOutput, SampleFile} from '../shared/worker-api.js';
+import {CdnData} from './fake-cdn-plugin.js';
 
 suite('typescript builder', () => {
   test('empty project', async () => {

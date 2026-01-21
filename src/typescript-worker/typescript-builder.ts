@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { BuildOutput, SampleFile } from '../shared/worker-api.js';
-import { TypesFetcher } from './types-fetcher.js';
-import { PackageJson } from './util.js';
-import { makeLspDiagnostic } from './diagnostic.js';
-import { WorkerContext } from './worker-context.js';
+import {BuildOutput, SampleFile} from '../shared/worker-api.js';
+import {TypesFetcher} from './types-fetcher.js';
+import {PackageJson} from './util.js';
+import {makeLspDiagnostic} from './diagnostic.js';
+import {WorkerContext} from './worker-context.js';
 
 export async function* processTypeScriptFiles(
   workerContext: WorkerContext,
@@ -52,7 +52,7 @@ export async function* processTypeScriptFiles(
     url: new URL(file.name, self.origin).href,
   }));
 
-  for (const { file, url } of inputFiles) {
+  for (const {file, url} of inputFiles) {
     loadedFiles.set(url, file.content);
   }
 
@@ -64,10 +64,10 @@ export async function* processTypeScriptFiles(
   // semantics.
   const defaultPackageJson =
     packageJson === undefined
-      ? { type: 'module' }
+      ? {type: 'module'}
       : packageJson.type === 'module'
         ? packageJson
-        : { ...packageJson, type: 'module' };
+        : {...packageJson, type: 'module'};
   loadedFiles.set(
     new URL('package.json', self.origin).href,
     JSON.stringify(defaultPackageJson),
@@ -84,7 +84,7 @@ export async function* processTypeScriptFiles(
     throw new Error('Unexpected error: program was undefined');
   }
 
-  for (const { file, url } of inputFiles) {
+  for (const {file, url} of inputFiles) {
     for (const tsDiagnostic of langService.getSyntacticDiagnostics(url)) {
       yield {
         kind: 'diagnostic',
@@ -102,7 +102,7 @@ export async function* processTypeScriptFiles(
       };
     });
     if (compiled !== undefined) {
-      yield { kind: 'file', file: compiled };
+      yield {kind: 'file', file: compiled};
     }
   }
 
@@ -121,7 +121,7 @@ export async function* processTypeScriptFiles(
     const url = new URL(`node_modules/${path}`, self.origin).href;
     langServiceHost.updateFileContentIfNeeded(url, content);
   }
-  for (const { file, url } of inputFiles) {
+  for (const {file, url} of inputFiles) {
     for (const tsDiagnostic of langService.getSemanticDiagnostics(url)) {
       yield {
         kind: 'diagnostic',

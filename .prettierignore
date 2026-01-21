@@ -10,7 +10,6 @@
 /internal/
 /service-worker/
 /shared/
-/src/configurator/themes.ts
 /src/playground-styles.ts
 /src/themes/
 /test/

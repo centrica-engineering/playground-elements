@@ -4,24 +4,24 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { assert } from '@esm-bundle/chai';
-import { build } from '../typescript-worker/build.js';
-import { executeServerCommand } from '@web/test-runner-commands';
+import {assert} from '@esm-bundle/chai';
+import {build} from '../typescript-worker/build.js';
+import {executeServerCommand} from '@web/test-runner-commands';
 
 import {
   BuildOutput,
   ModuleImportMap,
   SampleFile,
 } from '../shared/worker-api.js';
-import { CdnData } from './fake-cdn-plugin.js';
+import {CdnData} from './fake-cdn-plugin.js';
 
 export const configureFakeCdn = async (
   data: CdnData,
-): Promise<{ cdnBaseUrl: string; deleteCdnData: () => Promise<void> }> => {
-  const { cdnBaseUrl, id } = (await executeServerCommand(
+): Promise<{cdnBaseUrl: string; deleteCdnData: () => Promise<void>}> => {
+  const {cdnBaseUrl, id} = (await executeServerCommand(
     'set-fake-cdn-data',
     data,
-  )) as { cdnBaseUrl: string; id: number };
+  )) as {cdnBaseUrl: string; id: number};
   const deleteCdnData = async () => {
     await executeServerCommand('delete-fake-cdn-data', id);
   };
@@ -37,7 +37,7 @@ export const checkTransform = async (
   importMap: ModuleImportMap = {},
   cdnData: CdnData = {},
 ) => {
-  const { cdnBaseUrl, deleteCdnData } = await configureFakeCdn(cdnData);
+  const {cdnBaseUrl, deleteCdnData} = await configureFakeCdn(cdnData);
   try {
     const results: BuildOutput[] = [];
     await new Promise<void>((resolve) => {
@@ -48,7 +48,7 @@ export const checkTransform = async (
           results.push(result);
         }
       };
-      build(files, { importMap, cdnBaseUrl }, emit);
+      build(files, {importMap, cdnBaseUrl}, emit);
     });
 
     for (const result of results) {

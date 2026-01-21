@@ -10,7 +10,7 @@
  * new iterator throws.
  */
 export class MergedAsyncIterables<T> {
-  private readonly _buffer: Array<{ value: T; emitted: () => void }> = [];
+  private readonly _buffer: Array<{value: T; emitted: () => void}> = [];
   private _numSources = 0;
   private _notify?: () => void;
   private _done = false;
@@ -18,7 +18,7 @@ export class MergedAsyncIterables<T> {
   async *[Symbol.asyncIterator]() {
     while (this._numSources > 0) {
       while (this._buffer.length > 0) {
-        const { value, emitted } = this._buffer.shift()!;
+        const {value, emitted} = this._buffer.shift()!;
         yield value;
         // Let the loop in add() continue
         emitted();
@@ -42,7 +42,7 @@ export class MergedAsyncIterables<T> {
       for await (const value of iterable) {
         // Wait for this value to be emitted before continuing
         await new Promise<void>((emitted) => {
-          this._buffer.push({ value, emitted });
+          this._buffer.push({value, emitted});
           this._notify?.();
         });
       }
@@ -98,7 +98,7 @@ export const classifySpecifier = (
     // package name, which cannot contain ":" characters.
     return new URL(specifier).href ? 'url' : 'bare';
     // eslint-disable-next-line no-empty
-  } catch { }
+  } catch {}
   if (specifier.match(/^(\.){0,2}\//) !== null) {
     return 'relative';
   }
@@ -134,7 +134,7 @@ export const parseNpmStyleSpecifier = (
     string | undefined,
     string,
   ];
-  return { pkg, version: version ?? '', path };
+  return {pkg, version: version ?? '', path};
 };
 
 /**
@@ -170,7 +170,7 @@ export const changeFileExtension = (path: string, newExt: string): string => {
 export const charToLineAndChar = (
   str: string,
   char: number,
-): { line: number; character: number } => {
+): {line: number; character: number} => {
   let line = 0;
   let character = 0;
   for (let i = 0; i < char && i < str.length; i++) {
@@ -181,7 +181,7 @@ export const charToLineAndChar = (
       character++;
     }
   }
-  return { line, character };
+  return {line, character};
 };
 
 /**
@@ -237,7 +237,7 @@ export interface PackageJson {
   types?: string;
   typings?: string;
   type?: string;
-  dependencies?: { [key: string]: string };
+  dependencies?: {[key: string]: string};
 }
 
 export interface PackageJsonWithExports extends PackageJson {
@@ -254,11 +254,11 @@ export const isExactSemverVersion = (s: string) =>
     /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/,
   ) !== null;
 
-export const pkgVersion = ({ pkg, version }: { pkg: string; version: string }) =>
+export const pkgVersion = ({pkg, version}: {pkg: string; version: string}) =>
   `${pkg}@${version || 'latest'}`;
 
-export const pkgVersionPath = ({ pkg, version, path }: NpmFileLocation) =>
-  trimTrailingSlash(`${pkgVersion({ pkg, version })}/${trimLeadingSlash(path)}`);
+export const pkgVersionPath = ({pkg, version, path}: NpmFileLocation) =>
+  trimTrailingSlash(`${pkgVersion({pkg, version})}/${trimLeadingSlash(path)}`);
 
 export const trimLeadingSlash = (s: string) =>
   s.startsWith('/') ? s.slice(1) : s;
