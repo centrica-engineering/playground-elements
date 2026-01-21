@@ -79,10 +79,10 @@
       ]
     },
     "build:styles-module": {
-      "command": "FORCE_COLOR=1 rollup -c rollup.config.styles.js",
+      "command": "node scripts/generate-playground-styles.js",
       "files": [
         "playground-styles.css",
-        "rollup.config.styles.js"
+        "scripts/generate-playground-styles.js"
       ],
       "output": [
         "src/playground-styles.ts"
@@ -258,7 +258,6 @@
     "prettier": "^3.8.0",
     "rollup": "^4.55.3",
     "rollup-plugin-copy": "^3.5.0",
-    "rollup-plugin-lit-css": "^6.0.0",
     "semver": "^7.7.3",
     "typescript": "~5.9.3",
     "wireit": "^0.14.12"
