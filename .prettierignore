@@ -11,7 +11,8 @@
 /service-worker/
 /shared/
 /src/playground-styles.ts
-/src/themes/
+/src/themes/*
+!/src/themes/dark.css.ts
 /test/
 /themes/
 /typescript-worker/

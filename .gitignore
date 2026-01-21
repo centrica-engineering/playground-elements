@@ -20,7 +20,8 @@
 /test-results/
 /_codemirror/
 /themes/
-/src/themes/
+/src/themes/*
+!/src/themes/dark.css.ts
 /src/_codemirror/codemirror-styles.ts
 .tsbuildinfo
 /playground-service-worker.*
