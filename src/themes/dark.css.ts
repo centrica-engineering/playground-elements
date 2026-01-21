@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { css } from 'lit';
+import {css} from 'lit';
 
 const style = css`
   /* Generated from themes/dark.css */
