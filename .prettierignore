@@ -1,6 +1,7 @@
 *.html
 /_codemirror/
 /.wireit
+/test-results/
 /*.d.ts
 /*.js
 /configurator/

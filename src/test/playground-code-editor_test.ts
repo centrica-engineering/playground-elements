@@ -8,8 +8,26 @@ import {assert} from '@esm-bundle/chai';
 import '../playground-code-editor.js';
 import {PlaygroundCodeEditor} from '../playground-code-editor.js';
 import {sendKeys} from '@web/test-runner-commands';
+import {undo} from '../internal/codemirror.js';
+import type {EditorView} from '../internal/codemirror.js';
 
 const raf = async () => new Promise((r) => requestAnimationFrame(r));
+
+const getView = (editor: PlaygroundCodeEditor) => {
+  const view = (editor as unknown as {_view?: EditorView})._view;
+  assert.isOk(view, 'EditorView not initialized');
+  return view!;
+};
+
+const getValue = (editor: PlaygroundCodeEditor) =>
+  getView(editor).state.doc.toString();
+
+const setValue = (editor: PlaygroundCodeEditor, value: string) => {
+  const view = getView(editor);
+  view.dispatch({
+    changes: {from: 0, to: view.state.doc.length, insert: value},
+  });
+};
 
 suite('playground-code-editor', () => {
   let container: HTMLDivElement;
@@ -26,7 +44,7 @@ suite('playground-code-editor', () => {
   test('is registered', () => {
     assert.instanceOf(
       document.createElement('playground-code-editor'),
-      PlaygroundCodeEditor
+      PlaygroundCodeEditor,
     );
   });
 
@@ -53,28 +71,25 @@ suite('playground-code-editor', () => {
     editor.value = 'foo';
     container.appendChild(editor);
     await editor.updateComplete;
+    await raf();
     await new Promise<void>((resolve) => {
       editor.addEventListener('change', () => resolve());
-      const editorInternals = editor as unknown as {
-        _codemirror: PlaygroundCodeEditor['_codemirror'];
-      };
-      editorInternals._codemirror!.setValue('bar');
+      setValue(editor, 'bar');
     });
   });
 
   suite('history', () => {
     let editor: PlaygroundCodeEditor;
-    let editorInternals: {
-      _codemirror: PlaygroundCodeEditor['_codemirror'];
-    };
+    let view: ReturnType<typeof getView>;
 
     setup(async () => {
       editor = document.createElement('playground-code-editor');
       // For correct history, CodeMirror needs to be initialized and attached to
       // the DOM.
       container.appendChild(editor);
+      await editor.updateComplete;
       await raf();
-      editorInternals = editor as unknown as typeof editorInternals;
+      view = getView(editor);
     });
 
     teardown(() => {
@@ -87,31 +102,28 @@ suite('playground-code-editor', () => {
       editor.value = 'document key 1';
       editor.documentKey = DOCUMENT_KEY1;
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'document key 1');
+      assert.equal(getValue(editor), 'document key 1');
       editor.value = 'document key 2';
       editor.documentKey = DOCUMENT_KEY2;
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'document key 2');
+      assert.equal(getValue(editor), 'document key 2');
       // If only the documentKey is changed, the current value is set on the
       // document cache. The `value` property drives the CodeMirror contents.
       editor.documentKey = DOCUMENT_KEY1;
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'document key 2');
+      assert.equal(getValue(editor), 'document key 2');
 
       // Changing documentKey and unsetting the value should clear the editor.
       editor.value = undefined;
       editor.documentKey = DOCUMENT_KEY2;
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), '');
+      assert.equal(getValue(editor), '');
 
       // Unset the cache should result in a
       editor.documentKey = undefined;
       editor.value = 'value with no cache';
       await raf();
-      assert.equal(
-        editorInternals._codemirror!.getValue(),
-        'value with no cache'
-      );
+      assert.equal(getValue(editor), 'value with no cache');
     });
 
     test(`is cleared on unsetting documentKey`, async () => {
@@ -124,18 +136,18 @@ suite('playground-code-editor', () => {
       await raf();
       editor.documentKey = undefined;
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'update on cache');
+      assert.equal(getValue(editor), 'update on cache');
       // No-op, because unsetting documentKey clears history.
-      editorInternals._codemirror!.undo();
+      undo(view);
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'update on cache');
+      assert.equal(getValue(editor), 'update on cache');
       await raf();
       editor.value = 'changed';
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'changed');
-      editorInternals._codemirror!.undo();
+      assert.equal(getValue(editor), 'changed');
+      undo(view);
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'update on cache');
+      assert.equal(getValue(editor), 'update on cache');
     });
 
     test('is updated if value gets changed with doc cache', async () => {
@@ -144,33 +156,30 @@ suite('playground-code-editor', () => {
       editor.value = 'document key 1';
       editor.documentKey = DOCUMENT_KEY1;
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'document key 1');
+      assert.equal(getValue(editor), 'document key 1');
       editor.value = 'document key 2';
       editor.documentKey = DOCUMENT_KEY2;
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'document key 2');
+      assert.equal(getValue(editor), 'document key 2');
       editor.documentKey = DOCUMENT_KEY1;
       editor.value = 'override document key 1';
       await raf();
-      assert.equal(
-        editorInternals._codemirror!.getValue(),
-        'override document key 1'
-      );
-      editorInternals._codemirror?.undo();
+      assert.equal(getValue(editor), 'override document key 1');
+      undo(view);
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'document key 1');
+      assert.equal(getValue(editor), 'document key 1');
     });
 
     test('is maintained without using documentKey', async () => {
       editor.value = 'foo';
-      await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'foo');
+      await editor.updateComplete;
+      assert.equal(getValue(editor), 'foo');
       editor.value = 'bar';
+      await editor.updateComplete;
+      assert.equal(getValue(editor), 'bar');
+      undo(view);
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'bar');
-      editorInternals._codemirror!.undo();
-      await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'foo');
+      assert.equal(getValue(editor), 'foo');
     });
 
     test('is maintained with a document key', async () => {
@@ -178,13 +187,13 @@ suite('playground-code-editor', () => {
       editor.documentKey = DOCUMENT_KEY1;
       editor.value = 'foo';
       await editor.updateComplete;
-      assert.equal(editorInternals._codemirror!.getValue(), 'foo');
+      assert.equal(getValue(editor), 'foo');
       editor.value = 'bar';
       await editor.updateComplete;
-      assert.equal(editorInternals._codemirror!.getValue(), 'bar');
-      editorInternals._codemirror!.undo();
+      assert.equal(getValue(editor), 'bar');
+      undo(view);
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'foo');
+      assert.equal(getValue(editor), 'foo');
     });
 
     test('is associated to the documentKey property', async () => {
@@ -196,10 +205,10 @@ suite('playground-code-editor', () => {
       editor.value = 'potato';
       editor.documentKey = DOCUMENT_KEY2;
       await editor.updateComplete;
-      assert.equal(editorInternals._codemirror!.getValue(), 'potato');
-      editorInternals._codemirror!.undo();
+      assert.equal(getValue(editor), 'potato');
+      undo(view);
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'potato');
+      assert.equal(getValue(editor), 'potato');
     });
 
     test('can be rehydrated from a saved document instance', async () => {
@@ -207,23 +216,25 @@ suite('playground-code-editor', () => {
       const DOCUMENT_KEY2 = {};
 
       editor.documentKey = DOCUMENT_KEY1;
+      await raf();
       editor.value = 'foo';
-
-      await raf();
+      await editor.updateComplete;
       editor.value = 'bar';
-      await raf();
+      await editor.updateComplete;
       editor.documentKey = DOCUMENT_KEY2;
       await raf();
       editor.value = 'potato';
-      await raf();
+      await editor.updateComplete;
       editor.documentKey = DOCUMENT_KEY1;
       editor.value = 'bar';
       await raf();
 
-      assert.equal(editorInternals._codemirror!.getValue(), 'bar');
-      editorInternals._codemirror!.undo();
+      // Restoring the saved document should rehydrate its history.
+
+      assert.equal(getValue(editor), 'bar');
+      undo(view);
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue(), 'foo');
+      assert.equal(getValue(editor), 'foo');
     });
   });
 
@@ -249,7 +260,7 @@ suite('playground-code-editor', () => {
       type: PlaygroundCodeEditor['type'],
       value: string,
       text: string,
-      color: string
+      color: string,
     ) => {
       const editor = document.createElement('playground-code-editor');
       editor.type = type;
@@ -288,7 +299,7 @@ suite('playground-code-editor', () => {
         'tsx',
         'const x: () => unknown = () => <p>foo</p>;',
         'p',
-        tagColor
+        tagColor,
       ));
 
     test('html-in-js', async () =>
@@ -311,7 +322,7 @@ suite('playground-code-editor', () => {
     async function assertToggle(
       type: PlaygroundCodeEditor['type'],
       value: string,
-      expect: string
+      expect: string,
     ) {
       const editor = document.createElement('playground-code-editor');
       editor.type = type;
@@ -385,7 +396,7 @@ suite('playground-code-editor', () => {
       assert.include(
         // There isn't a focusContainer when the editor is in readonly mode.
         editor.shadowRoot!.querySelector<HTMLDivElement>('div')!.innerText,
-        'const g = 3;'
+        'const g = 3;',
       );
     });
   });

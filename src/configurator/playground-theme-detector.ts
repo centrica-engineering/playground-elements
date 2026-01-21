@@ -158,7 +158,7 @@ export class PlaygroundThemeDetector extends LitElement {
               class="color"
               title=${prop}
               style="background:${color ?? 'transparent'}"
-            ></span>`
+            ></span>`,
         )}
       </div>
 
@@ -166,7 +166,7 @@ export class PlaygroundThemeDetector extends LitElement {
         <button
           @click=${this._onClickApply}
           .disabled=${![...this._propertyValues.values()].some(
-            (val) => val !== null
+            (val) => val !== null,
           )}
         >
           Apply
@@ -177,14 +177,7 @@ export class PlaygroundThemeDetector extends LitElement {
   }
 
   override async firstUpdated() {
-    // CodeMirror only renders visible lines plus some margin. Force it to
-    // render everything so we can query it.
     await this._playgroundWithUserText.updateComplete;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this._playgroundWithUserText as any)._codemirror.setOption(
-      'viewportMargin',
-      Infinity
-    );
   }
 
   async _copySample(filetype: 'ts' | 'html' | 'css') {
@@ -237,7 +230,7 @@ export class PlaygroundThemeDetector extends LitElement {
     const fragmentToProperty = new Map<string, string[]>();
     const ourWalker = document.createTreeWalker(
       this._playgroundWithUserText.shadowRoot!,
-      NodeFilter.SHOW_TEXT
+      NodeFilter.SHOW_TEXT,
     );
     while (ourWalker.nextNode()) {
       const textNode = ourWalker.currentNode;
@@ -248,7 +241,7 @@ export class PlaygroundThemeDetector extends LitElement {
 
       let property;
       const cmClasses = [...parent.classList].filter((c) =>
-        c.startsWith('cm-')
+        c.startsWith('cm-'),
       );
       if (cmClasses.length > 0) {
         // The last CodeMirror class tends to be more specific (e.g. `callee` is
@@ -282,7 +275,7 @@ export class PlaygroundThemeDetector extends LitElement {
     const doc = this._iframeWithUserHtml.contentDocument!;
     const theirWalker = doc.createTreeWalker(
       doc.body,
-      NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT
+      NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
     );
     let foundBackground = false;
     while (theirWalker.nextNode()) {
@@ -298,7 +291,7 @@ export class PlaygroundThemeDetector extends LitElement {
       } else if (!foundBackground && node.nodeType === Node.ELEMENT_NODE) {
         // Use the first non-transparent background (depth first).
         const background = window.getComputedStyle(
-          node as Element
+          node as Element,
         ).backgroundColor;
         if (background !== 'rgba(0, 0, 0, 0)') {
           foundBackground = true;
@@ -317,7 +310,7 @@ export class PlaygroundThemeDetector extends LitElement {
         detail: {
           properties: this._propertyValues,
         },
-      })
+      }),
     );
   }
 

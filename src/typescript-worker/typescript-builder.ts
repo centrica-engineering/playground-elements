@@ -4,15 +4,15 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import {BuildOutput, SampleFile} from '../shared/worker-api.js';
-import {TypesFetcher} from './types-fetcher.js';
-import {PackageJson} from './util.js';
-import {makeLspDiagnostic} from './diagnostic.js';
-import {WorkerContext} from './worker-context.js';
+import { BuildOutput, SampleFile } from '../shared/worker-api.js';
+import { TypesFetcher } from './types-fetcher.js';
+import { PackageJson } from './util.js';
+import { makeLspDiagnostic } from './diagnostic.js';
+import { WorkerContext } from './worker-context.js';
 
 export async function* processTypeScriptFiles(
   workerContext: WorkerContext,
-  results: AsyncIterable<BuildOutput> | Iterable<BuildOutput>
+  results: AsyncIterable<BuildOutput> | Iterable<BuildOutput>,
 ): AsyncIterable<BuildOutput> {
   // Instantiate langservice variables for ease of access
   const langService = workerContext.languageServiceContext.service;
@@ -32,7 +32,7 @@ export async function* processTypeScriptFiles(
       if (result.kind === 'file' && result.file.name === 'package.json') {
         try {
           packageJson = JSON.parse(result.file.content) as PackageJson;
-        } catch (e) {
+        } catch {
           // A bit hacky, but BareModuleTransformer already emits a diagnostic
           // for this case, so we don't need another one.
         }
@@ -52,7 +52,7 @@ export async function* processTypeScriptFiles(
     url: new URL(file.name, self.origin).href,
   }));
 
-  for (const {file, url} of inputFiles) {
+  for (const { file, url } of inputFiles) {
     loadedFiles.set(url, file.content);
   }
 
@@ -64,13 +64,13 @@ export async function* processTypeScriptFiles(
   // semantics.
   const defaultPackageJson =
     packageJson === undefined
-      ? {type: 'module'}
+      ? { type: 'module' }
       : packageJson.type === 'module'
-      ? packageJson
-      : {...packageJson, type: 'module'};
+        ? packageJson
+        : { ...packageJson, type: 'module' };
   loadedFiles.set(
     new URL('package.json', self.origin).href,
-    JSON.stringify(defaultPackageJson)
+    JSON.stringify(defaultPackageJson),
   );
 
   // Sync the new loaded files with the servicehost.
@@ -84,7 +84,7 @@ export async function* processTypeScriptFiles(
     throw new Error('Unexpected error: program was undefined');
   }
 
-  for (const {file, url} of inputFiles) {
+  for (const { file, url } of inputFiles) {
     for (const tsDiagnostic of langService.getSyntacticDiagnostics(url)) {
       yield {
         kind: 'diagnostic',
@@ -102,7 +102,7 @@ export async function* processTypeScriptFiles(
       };
     });
     if (compiled !== undefined) {
-      yield {kind: 'file', file: compiled};
+      yield { kind: 'file', file: compiled };
     }
   }
 
@@ -113,7 +113,7 @@ export async function* processTypeScriptFiles(
     workerContext.importMapResolver,
     packageJson,
     inputFiles.map((file) => file.file.content),
-    workerContext.languageServiceContext.compilerOptions.lib
+    workerContext.languageServiceContext.compilerOptions.lib,
   );
   for (const [path, content] of typings.files) {
     // TypeScript is going to look for these files as paths relative to our
@@ -121,7 +121,7 @@ export async function* processTypeScriptFiles(
     const url = new URL(`node_modules/${path}`, self.origin).href;
     langServiceHost.updateFileContentIfNeeded(url, content);
   }
-  for (const {file, url} of inputFiles) {
+  for (const { file, url } of inputFiles) {
     for (const tsDiagnostic of langService.getSemanticDiagnostics(url)) {
       yield {
         kind: 'diagnostic',

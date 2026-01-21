@@ -9,6 +9,7 @@
     body {
       font-family: Arial, sans-serif;
     }
+
     playground-ide {
       margin-bottom: 48px;
       max-width: 800px;
@@ -19,6 +20,7 @@
       height: 350px;
       border: 1px solid #ddd;
     }
+
     .sideBySide {
       display: flex;
       border: 1px solid #ddd;
@@ -26,11 +28,13 @@
       height: 200px;
       margin-bottom: 48px;
     }
-    .sideBySide > playground-file-editor {
+
+    .sideBySide>playground-file-editor {
       width: 70%;
       border-right: 1px solid #ddd;
     }
-    .sideBySide > playground-preview {
+
+    .sideBySide>playground-preview {
       width: 30%;
     }
   </style>
@@ -97,6 +101,7 @@ export class MySecondElement extends LitElement {
       #typescript playground-ide::part(preview-toolbar) {
         display: none;
       }
+
       #typescript playground-ide::part(preview-loading-indicator) {
         top: 0;
       }
@@ -105,8 +110,7 @@ export class MySecondElement extends LitElement {
       Note that imports to other TypeScript files use the .js extension like
       you would with tsc.
     </p>
-    <playground-ide project-src="/demo/typescript/project.json"
-                 line-numbers></playground-ide>
+    <playground-ide project-src="/demo/typescript/project.json" line-numbers></playground-ide>
   </section>
 
   <h2>Basic Project</h2>
@@ -116,9 +120,9 @@ export class MySecondElement extends LitElement {
   </p>
   <playground-ide project-src="/demo/project-1/project.json"></playground-ide>
 
-  <h2>MWC Demo</h2>
+  <h2>Material Web Demo</h2>
   <p>
-    A demo for <code>&lt;mwc-button></code>.
+    A demo for <code>&lt;md-filled-button></code>.
   </p>
   <playground-ide project-src="/demo/mwc-button/project.json"></playground-ide>
 
@@ -146,33 +150,27 @@ export class MySecondElement extends LitElement {
   <script src="./index.js">&lt;/script>
 </body>
         </script>
-        <script type="sample/ts" filename="index.ts">
+      <script type="sample/ts" filename="index.ts">
     document.body.textContent = 'Hello!';
         </script>
-      </playground-project>
+    </playground-project>
 
     <h4>index.html</h4>
-    <playground-file-editor
-        project="custom-project"
-        filename="index.html"
-        no-line-numbers>
+    <playground-file-editor project="custom-project" filename="index.html" no-line-numbers>
     </playground-file-editor>
 
     <h4>index.ts</h4>
-    <playground-file-editor
-        project="custom-project"
-        filename="index.ts"
-        no-line-numbers>
+    <playground-file-editor project="custom-project" filename="index.ts" no-line-numbers>
     </playground-file-editor>
 
     <h4>preview</h4>
-    <playground-preview
-        project="custom-project">
+    <playground-preview project="custom-project">
     </playground-preview>
   </section>
 
   <h2>Hidden parts</h2>
-  <p>Using <code>playground-hide</code> and <code>playground-fold</code>, you can hide some parts of a file's contents.</p>
+  <p>Using <code>playground-hide</code> and <code>playground-fold</code>, you can hide some parts of a file's contents.
+  </p>
   <playground-ide>
     <script type="sample/html" filename="index.html">
 <!doctype html>
@@ -220,32 +218,41 @@ export class MySecondElement extends LitElement {
 
     <link href="/node_modules/codemirror/lib/codemirror.css" rel="stylesheet">
     <style>
-    .prerenderBody {
-      font-family: initial;
-      margin: 0 8px;
-    }
+      .prerenderBody {
+        font-family: initial;
+        margin: 0 8px;
+      }
 
-    #prerenderLoadButton {
-      margin-bottom: 20px;
-    }
+      #prerenderLoadButton {
+        margin-bottom: 20px;
+      }
 
-    /* These styles come from parent classes that we don't want to apply because
+      /* These styles come from parent classes that we don't want to apply because
     they mess with layout too much. */
-    .CodeMirror-line {
-      margin: 0;
-      padding-left: 4px;
-    }
+      .CodeMirror-line {
+        margin: 0;
+        padding-left: 4px;
+      }
     </style>
 
     <div class="sideBySide">
       <playground-file-editor id="prerenderEditor">
         <div class="CodeMirror-lines cm-s-default">
-          <pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-meta">&lt;!doctype html&gt;</span></span></pre><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-tag">&lt;body&gt;</span></span></pre><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;">  <span class="cm-tag">&lt;p&gt;</span>Hello World!<span class="cm-tag">&lt;/p&gt;</span></span></pre><pre class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-tag">&lt;/body&gt;</span></span></pre>
+          <pre class=" CodeMirror-line "
+            role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-meta">&lt;!doctype html&gt;</span></span></pre>
+          <pre class=" CodeMirror-line "
+            role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-tag">&lt;body&gt;</span></span></pre>
+          <pre class=" CodeMirror-line "
+            role="presentation"><span role="presentation" style="padding-right: 0.1px;">  <span class="cm-tag">&lt;p&gt;</span>Hello World!<span class="cm-tag">&lt;/p&gt;</span></span></pre>
+          <pre class=" CodeMirror-line "
+            role="presentation"><span role="presentation" style="padding-right: 0.1px;"><span class="cm-tag">&lt;/body&gt;</span></span></pre>
         </div>
       </playground-file-editor>
 
       <playground-preview id="prerenderPreview">
-        <div class="prerenderBody"><p>Hello World!</p></div>
+        <div class="prerenderBody">
+          <p>Hello World!</p>
+        </div>
       </playground-preview>
     </div>
   </section>

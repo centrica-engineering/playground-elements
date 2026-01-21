@@ -16,7 +16,7 @@ import {PlaygroundCodeEditor} from './playground-code-editor.js';
 import {CodeEditorChangeData} from './shared/worker-api.js';
 
 /**
- * A text editor associated with a <playground-project>.
+ * A text editor associated with a &lt;playground-project&gt;.
  */
 @customElement('playground-file-editor')
 export class PlaygroundFileEditor extends PlaygroundConnectedElement {
@@ -26,7 +26,8 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
       /* Prevents scrollbars from changing container size and shifting layout
       slightly. */
       box-sizing: border-box;
-      height: 350px;
+      height: 100%;
+      min-height: 0;
     }
 
     slot {
@@ -37,6 +38,7 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
 
     playground-code-editor {
       height: 100%;
+      min-height: 0;
       border-radius: inherit;
       border-top-left-radius: 0;
       border-top-right-radius: 0;
@@ -108,23 +110,23 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
       if (oldProject) {
         oldProject.removeEventListener(
           'filesChanged',
-          this._onProjectFilesChanged
+          this._onProjectFilesChanged,
         );
         oldProject.removeEventListener('compileDone', this._onCompileDone);
         oldProject.removeEventListener(
           'diagnosticsChanged',
-          this._onDiagnosticsChanged
+          this._onDiagnosticsChanged,
         );
       }
       if (this._project) {
         this._project.addEventListener(
           'filesChanged',
-          this._onProjectFilesChanged
+          this._onProjectFilesChanged,
         );
         this._project.addEventListener('compileDone', this._onCompileDone);
         this._project.addEventListener(
           'diagnosticsChanged',
-          this._onDiagnosticsChanged
+          this._onDiagnosticsChanged,
         );
       }
       this._onProjectFilesChanged();
@@ -152,7 +154,7 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
               .readonly=${this.readonly || !this._currentFile}
               .pragmas=${this.pragmas}
               .diagnostics=${this._project?.diagnostics?.get(
-                this._currentFile?.name ?? ''
+                this._currentFile?.name ?? '',
               )}
               .noCompletions=${this.noCompletions}
               @change=${this._onEdit}
@@ -193,9 +195,8 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
   private async _onRequestCompletions(e: CustomEvent) {
     const codeEditorChangeData = e.detail as CodeEditorChangeData;
     codeEditorChangeData.fileName = this.filename ?? '';
-    const completions = await this._project?.getCompletions(
-      codeEditorChangeData
-    );
+    const completions =
+      await this._project?.getCompletions(codeEditorChangeData);
     if (completions) {
       codeEditorChangeData.provideCompletions(completions);
     }

@@ -7,14 +7,14 @@
 import {html, css, PropertyValues, nothing} from 'lit';
 import {customElement, property, state, query} from 'lit/decorators.js';
 
-import '@material/mwc-icon-button';
+import '@material/web/iconbutton/icon-button.js';
+import '@material/web/menu/menu.js';
+import '@material/web/menu/menu-item.js';
+import type {Menu} from '@material/web/menu/menu.js';
 
 import './internal/tab-bar.js';
 import './internal/tab.js';
 import './playground-file-system-controls.js';
-import '@material/mwc-menu/mwc-menu-surface.js';
-
-import {MenuSurface} from '@material/mwc-menu/mwc-menu-surface.js';
 import {PlaygroundConnectedElement} from './playground-connected-element.js';
 
 import {PlaygroundFileEditor} from './playground-file-editor.js';
@@ -76,14 +76,14 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
 
     .drag-indicator {
       color: var(--mdc-theme-text-disabled-on-light, rgba(0, 0, 0, 0.1));
-      --mdc-icon-button-size: 24px;
-      --mdc-icon-size: 24px;
+      width: 24px;
+      height: 24px;
     }
 
     .menu-button {
       visibility: hidden;
-      --mdc-icon-button-size: 24px;
-      --mdc-icon-size: 24px;
+      width: 24px;
+      height: 24px;
     }
 
     playground-internal-tab:hover > .menu-button,
@@ -91,7 +91,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       visibility: visible;
     }
 
-    mwc-icon-button {
+    md-icon-button {
       color: var(--playground-tab-bar-foreground-color);
     }
   `;
@@ -118,14 +118,19 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
   @state()
   private _targetFileIndex: number | undefined = undefined;
 
+  @state()
+  private _tabPanelOpen = false;
+
+  private _tabPanelAnchor: HTMLElement | null = null;
+
   @query('playground-file-system-controls')
   private _fileSystemControls?: PlaygroundFileSystemControls;
 
-  @query('mwc-menu-surface')
-  private _tabPanel?: MenuSurface;
+  @query('md-menu')
+  private _tabPanel?: Menu;
 
   /**
-   * The actual `<playground-file-editor>` node, determined by the `editor`
+   * The actual &lt;playground-file-editor&gt; node, determined by the `editor`
    * property.
    */
   @state()
@@ -133,7 +138,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
 
   /**
    * The editor that this tab bar controls. Either the
-   * `<playground-file-editor>` node itself, or its `id` in the host scope.
+   * &lt;playground-file-editor&gt; node itself, or its `id` in the host scope.
    */
   @property()
   set editor(elementOrId: PlaygroundFileEditor | string) {
@@ -162,14 +167,14 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       if (oldProject) {
         oldProject.removeEventListener(
           'filesChanged',
-          this._onProjectFilesChanged
+          this._onProjectFilesChanged,
         );
       }
       if (this._project) {
         this._handleFilesChanged(true);
         this._project.addEventListener(
           'filesChanged',
-          this._onProjectFilesChanged
+          this._onProjectFilesChanged,
         );
       }
     }
@@ -211,7 +216,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
               ${this.editableFileSystem &&
               name !== 'index.html' &&
               this._visibleFiles.length > 2
-                ? html`<mwc-icon-button
+                ? html`<md-icon-button
                     class="drag-indicator"
                     @mouseover=${() => this._dragIndicatorMouseOver(index)}
                     @mouseout=${() => this._dragIndicatorMouseOut()}
@@ -227,15 +232,14 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
                         d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"
                       />
                     </svg>
-                  </mwc-icon-button>`
+                  </md-icon-button>`
                 : nothing}
               ${label || name}
-              ${this.editableFileSystem && name !== 'index.html'
-                ? html`<mwc-icon-button
+              ${this.editableFileSystem
+                ? html`<md-icon-button
                     aria-label="File menu"
                     class="menu-button"
-                    @click=${(event: CustomEvent) =>
-                      this._onOpenMenu(name, event)}
+                    @click=${(event: Event) => this._onOpenMenu(name, event)}
                   >
                     <!-- Source: https://material.io/resources/icons/?icon=menu&style=baseline -->
                     <svg
@@ -248,32 +252,38 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
                         d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"
                       />
                     </svg>
-                  </mwc-icon-button>`
+                  </md-icon-button>`
                 : nothing}
-            </playground-internal-tab>`
+            </playground-internal-tab>`,
         )}
       </playground-internal-tab-bar>
 
-      <mwc-icon-button aria-label="View tabs" @click=${this._onOpenTabPanel}>
+      <md-icon-button aria-label="View tabs" @click=${this._onOpenTabPanel}>
         <!-- Source: https://material.io/resources/icons/?icon=menu&style=baseline -->
         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentcolor">
           <path d="M0 0h24v24H0z" fill="none" />
           <path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z" />
         </svg>
-      </mwc-icon-button>
+      </md-icon-button>
 
-      <mwc-menu-surface fixed quick .open=${false} corner="BOTTOM_START">
-        <div class="wrapper">
-          <mwc-list class="menu-list">
-            ${this._visibleFiles.map(
-              ({name}) =>
-                html`<mwc-list-item @click=${() => this._updateActive(name)}>
-                  ${name}
-                </mwc-list-item>`
-            )}
-          </mwc-list>
-        </div>
-      </mwc-menu-surface>
+      <md-menu
+        positioning="fixed"
+        quick
+        anchorCorner="end-start"
+        menuCorner="start-start"
+        .anchorElement=${this._tabPanelAnchor}
+        .open=${this._tabPanelOpen}
+        @closed=${() => {
+          this._tabPanelOpen = false;
+        }}
+      >
+        ${this._visibleFiles.map(
+          ({name}) =>
+            html`<md-menu-item @click=${() => this._updateActive(name)}
+              ><div slot="headline">${name}</div></md-menu-item
+            >`,
+        )}
+      </md-menu>
 
       ${this.editableFileSystem
         ? html`
@@ -365,7 +375,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
   private _handleFilesChanged(newProjectLoaded = false) {
     if (newProjectLoaded) {
       const fileToSelect = this._visibleFiles.find(
-        (file) => file.selected
+        (file) => file.selected,
       )?.name;
       if (fileToSelect !== undefined) {
         this._activeFileName = fileToSelect;
@@ -379,7 +389,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     event: CustomEvent<{
       tab?: PlaygroundInternalTab;
       previous?: PlaygroundInternalTab;
-    }>
+    }>,
   ) {
     const tab = event.detail.tab;
     if (!tab) {
@@ -393,16 +403,13 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     }
   }
 
-  private _onOpenTabPanel(
-    event: CustomEvent<{index: number; anchor: HTMLElement}>
-  ) {
+  private _onOpenTabPanel(event: Event) {
     const panel = this._tabPanel;
     if (!panel) {
       return;
     }
-    panel.open = true;
-
-    panel.anchor = event.target as HTMLElement;
+    this._tabPanelAnchor = event.currentTarget as HTMLElement;
+    this._tabPanelOpen = true;
     event.stopPropagation();
   }
 
@@ -411,21 +418,18 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     this._setNewActiveFile();
 
     if (this._tabPanel) {
-      this._tabPanel.open = false;
+      this._tabPanelOpen = false;
     }
   }
 
-  private _onOpenMenu(
-    filename: string,
-    event: CustomEvent<{index: number; anchor: HTMLElement}>
-  ) {
+  private _onOpenMenu(filename: string, event: Event) {
     const controls = this._fileSystemControls;
     if (!controls) {
       return;
     }
     controls.state = 'menu';
     controls.filename = filename;
-    controls.anchorElement = event.target as HTMLElement;
+    controls.anchorElement = event.currentTarget as HTMLElement;
     event.stopPropagation();
   }
 
@@ -444,7 +448,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     // might have changed.
     if (this._activeFileName) {
       const index = this._visibleFiles.findIndex(
-        (file) => file.name === this._activeFileName
+        (file) => file.name === this._activeFileName,
       );
       if (index >= 0) {
         this._activeFileIndex = index;

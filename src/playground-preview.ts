@@ -7,9 +7,9 @@
 import {html, css, PropertyValues, nothing, TemplateResult} from 'lit';
 import {customElement, property, query, state} from 'lit/decorators.js';
 import {classMap} from 'lit/directives/class-map.js';
-import '@material/mwc-icon-button';
+import '@material/web/iconbutton/icon-button.js';
 import {PlaygroundProject} from './playground-project.js';
-import '@material/mwc-linear-progress';
+import '@material/web/progress/linear-progress.js';
 import {PlaygroundConnectedElement} from './playground-connected-element.js';
 import './internal/overlay.js';
 
@@ -27,7 +27,8 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
       flex-direction: column;
       background: white;
       font-family: sans-serif;
-      height: 350px;
+      height: 100%;
+      min-height: 0;
       position: relative; /* for the error message overlay */
     }
 
@@ -50,8 +51,13 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
     }
 
     #reload-button {
-      --mdc-icon-button-size: 30px;
-      --mdc-icon-size: 18px;
+      width: 30px;
+      height: 30px;
+    }
+
+    #reload-button svg {
+      width: 18px;
+      height: 18px;
     }
 
     #content {
@@ -68,16 +74,14 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
       padding: 0 20px;
     }
 
-    mwc-linear-progress {
+    md-linear-progress {
       /* There is no way to directly specify the height of a linear progress
       bar, but zooming works well enough. It's 4px by default, and we want it to
       be 2px to match the tab bar indicator.*/
       zoom: 0.5;
-      --mdc-linear-progress-buffer-color: transparent;
       position: absolute;
       top: -6px;
       width: 100%;
-      --mdc-theme-primary: var(--playground-highlight-color, #6200ee);
     }
 
     #color-blindness {
@@ -237,7 +241,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
     return html`
       <div id="toolbar" part="preview-toolbar">
         <span id="location" part="preview-location"> ${this.location}</span>
-        <mwc-icon-button
+        <md-icon-button
           id="reload-button"
           aria-label="Reload preview"
           part="preview-reload-button"
@@ -256,16 +260,17 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
               d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
             />
           </svg>
-        </mwc-icon-button>
+        </md-icon-button>
       </div>
 
       <div id="content" class=${classMap({error: !!this._error})}>
-        <mwc-linear-progress
+        <md-linear-progress
+          aria-label="Preview is loading"
           aria-hidden=${this._loading ? 'false' : 'true'}
           part="preview-loading-indicator"
           indeterminate
-          ?closed=${!this._showLoadingBar}
-        ></mwc-linear-progress>
+          ?hidden=${!this._showLoadingBar}
+        ></md-linear-progress>
 
         ${this._loadedAtLeastOnce ? nothing : html`<slot></slot>`}
 
@@ -406,16 +411,6 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
     if (this._loading && !this._slotHasAnyVisibleChildren()) {
       this._showLoadingBar = true;
     }
-
-    // The latest version of MWC forwards the aria-label attribute to the
-    // progressbar role correctly
-    // (https://github.com/material-components/material-components-web-components/pull/2264),
-    // but until 0.21.0 is released we'll need to fix it up ourselves.
-    const progress = this.shadowRoot!.querySelector('mwc-linear-progress')!;
-    await progress.updateComplete;
-    progress.shadowRoot
-      ?.querySelector('[role=progressbar]')
-      ?.setAttribute('aria-label', 'Preview is loading');
   }
 
   private _slotHasAnyVisibleChildren() {

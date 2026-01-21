@@ -15,6 +15,8 @@ import {PlaygroundCodeEditor} from '../playground-code-editor.js';
 import {PlaygroundProject} from '../playground-project.js';
 import {PlaygroundFileEditor} from '../playground-file-editor.js';
 import {PlaygroundPreview} from '../playground-preview.js';
+import {redo, undo, undoDepth} from '../internal/codemirror.js';
+import type {EditorView} from '../internal/codemirror.js';
 
 // There is browser variability with zero width spaces. This helper keeps tests
 // consistent.
@@ -42,6 +44,28 @@ suite('playground-ide', () => {
 
   const raf = async () => new Promise((r) => requestAnimationFrame(r));
 
+  const waitForEditorView = async (editor: PlaygroundCodeEditor) => {
+    for (let i = 0; i < 10; i++) {
+      const view = (editor as unknown as {_view?: EditorView})._view;
+      if (view) return view;
+      await raf();
+    }
+    assert.fail('EditorView not initialized');
+  };
+
+  const getEditorValue = async (editor: PlaygroundCodeEditor) =>
+    (await waitForEditorView(editor)).state.doc.toString();
+
+  const setEditorValue = async (
+    editor: PlaygroundCodeEditor,
+    value: string,
+  ) => {
+    const view = await waitForEditorView(editor);
+    view.dispatch({
+      changes: {from: 0, to: view.state.doc.length, insert: value},
+    });
+  };
+
   const pierce = async (...selectors: string[]) => {
     let node = document.body;
     for (const selector of selectors) {
@@ -59,14 +83,9 @@ suite('playground-ide', () => {
   // https://modern-web.dev/docs/test-runner/commands/#send-keys
   const updateCurrentFile = async (
     editor: PlaygroundCodeEditor,
-    newValue: string
+    newValue: string,
   ) => {
-    const codemirror = (
-      editor as unknown as {
-        _codemirror: PlaygroundCodeEditor['_codemirror'];
-      }
-    )._codemirror;
-    codemirror!.setValue(newValue);
+    await setEditorValue(editor, newValue);
   };
 
   const waitForIframeLoad = (iframe: HTMLElement) =>
@@ -78,7 +97,7 @@ suite('playground-ide', () => {
     const iframe = (await pierce(
       'playground-ide',
       'playground-preview',
-      'iframe'
+      'iframe',
     )) as HTMLIFrameElement;
     await waitForIframeLoad(iframe);
     // TODO(aomarks) Chromium and Webkit both fire iframe "load" after the
@@ -101,13 +120,13 @@ suite('playground-ide', () => {
     const tabBar = await pierce('playground-ide', 'playground-tab-bar');
     while (testRunning) {
       const selectedTab = tabBar.shadowRoot!.querySelector(
-        'playground-internal-tab[active]'
+        'playground-internal-tab[active]',
       );
       if (selectedTab) {
         assert.include(
           selectedTab.textContent?.trim(),
           filename,
-          `Selected tab did not contain '${filename}')`
+          `Selected tab did not contain '${filename}')`,
         );
         break;
       }
@@ -125,7 +144,7 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     await assertPreviewContains('Hello HTML');
   });
@@ -140,27 +159,24 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
 
     const editor = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
-    const editorInternals = editor as unknown as {
-      _codemirror: PlaygroundCodeEditor['_codemirror'];
-    };
     // Wait for the editor to instantiate.
     await raf();
 
     assert.include(
-      editorInternals._codemirror?.getValue(),
-      `<script>console.log('hello');</script>`
+      await getEditorValue(editor),
+      `<script>console.log('hello');</script>`,
     );
     assert.include(
-      editorInternals._codemirror?.getValue(),
-      `<script>console.log('potato');</script>`
+      await getEditorValue(editor),
+      `<script>console.log('potato');</script>`,
     );
   });
 
@@ -178,7 +194,7 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     await assertPreviewContains('Hello JS');
   });
@@ -198,7 +214,7 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     await assertPreviewContains('Hello TS');
   });
@@ -346,19 +362,19 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     await assertPreviewContains('Hello HTML 1');
 
     const editor = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
     updateCurrentFile(editor, 'Hello HTML 2');
     const project = (await pierce(
       'playground-ide',
-      'playground-project'
+      'playground-project',
     )) as PlaygroundProject;
     // Note we shouldn't await the save(), because assertPreviewContains waits
     // for an iframe load event, and we can legitimately get an iframe load
@@ -382,7 +398,7 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     await assertPreviewContains('Hello JS');
     const tabBar = await pierce('playground-ide', 'playground-tab-bar');
@@ -404,7 +420,7 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     await assertPreviewContains('Hello JS');
     const tabBar = await pierce('playground-ide', 'playground-tab-bar');
@@ -444,24 +460,23 @@ suite('playground-ide', () => {
     const editor = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
 
-    const codemirrorContainer = editor.shadowRoot!.querySelector(
-      '.CodeMirror'
-    ) as HTMLElement;
     const codeMirrorLongLine = editor.shadowRoot!.querySelectorAll(
-      '.CodeMirror-line'
+      '.cm-line',
     )[1] as HTMLElement;
 
-    assert.include(
-      Array.from(codemirrorContainer?.classList),
-      'CodeMirror-wrap'
+    const cmContent = editor.shadowRoot!.querySelector(
+      '.cm-content',
+    ) as HTMLElement;
+    const allowedWhiteSpace = new Set(['pre-wrap', 'break-spaces']);
+    assert.isTrue(
+      allowedWhiteSpace.has(getComputedStyle(cmContent).whiteSpace),
     );
-
-    assert.include(codeMirrorLongLine.style.paddingLeft, '4px');
-    assert.include(codeMirrorLongLine.style.paddingLeft, '4ch');
-    assert.equal(codeMirrorLongLine.style.textIndent, '-4ch');
+    assert.isTrue(
+      allowedWhiteSpace.has(getComputedStyle(codeMirrorLongLine).whiteSpace),
+    );
   });
 
   test('line wrapping enabled with line numbers', async () => {
@@ -482,24 +497,25 @@ suite('playground-ide', () => {
     const editor = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
 
-    const codemirrorContainer = editor.shadowRoot!.querySelector(
-      '.CodeMirror'
-    ) as HTMLElement;
     const codeMirrorLongLine = editor.shadowRoot!.querySelectorAll(
-      '.CodeMirror-line'
+      '.cm-line',
     )[1] as HTMLElement;
 
-    assert.include(
-      Array.from(codemirrorContainer?.classList),
-      'CodeMirror-wrap'
+    const cmContent = editor.shadowRoot!.querySelector(
+      '.cm-content',
+    ) as HTMLElement;
+    const allowedWhiteSpace = new Set(['pre-wrap', 'break-spaces']);
+    assert.isTrue(
+      allowedWhiteSpace.has(getComputedStyle(cmContent).whiteSpace),
     );
-
-    assert.include(codeMirrorLongLine.style.paddingLeft, '0.7em');
-    assert.include(codeMirrorLongLine.style.paddingLeft, '4ch');
-    assert.equal(codeMirrorLongLine.style.textIndent, '-4ch');
+    assert.isTrue(
+      allowedWhiteSpace.has(getComputedStyle(codeMirrorLongLine).whiteSpace),
+    );
+    assert.isNotNull(editor.shadowRoot!.querySelector('.cm-gutters'));
+    assert.isNotNull(editor.shadowRoot!.querySelector('.cm-lineNumbers'));
   });
 
   test('a11y: is contenteditable', async () => {
@@ -519,7 +535,7 @@ suite('playground-ide', () => {
       'playground-ide',
       'playground-file-editor',
       'playground-code-editor',
-      '.CodeMirror-code'
+      '.cm-content',
     );
 
     assert.equal(cmCode.getAttribute('contenteditable'), 'true');
@@ -542,13 +558,20 @@ suite('playground-ide', () => {
     const editor = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
 
     const queryHiddenLineNumbers = () =>
       [
-        ...editor.shadowRoot!.querySelectorAll('.CodeMirror-gutter-wrapper'),
-      ].filter((gutter) => gutter.getAttribute('aria-hidden') === 'true');
+        ...editor.shadowRoot!.querySelectorAll(
+          '.cm-lineNumbers .cm-gutterElement',
+        ),
+      ].filter((gutter) => {
+        const text = gutter.textContent?.trim() ?? '';
+        return (
+          /^\d+$/.test(text) && gutter.getAttribute('aria-hidden') === 'true'
+        );
+      });
 
     // Initial render with line-numbers enabled.
     assert.equal(queryHiddenLineNumbers().length, 2);
@@ -564,10 +587,7 @@ suite('playground-ide', () => {
     assert.equal(queryHiddenLineNumbers().length, 2);
 
     // Add a line.
-    const editorInternals = editor as unknown as {
-      _codemirror: PlaygroundCodeEditor['_codemirror'];
-    };
-    editorInternals._codemirror!.setValue(editor.value + '\nBaz');
+    await setEditorValue(editor, (editor.value ?? '') + '\nBaz');
     await raf();
     assert.equal(queryHiddenLineNumbers().length, 3);
   });
@@ -588,13 +608,13 @@ suite('playground-ide', () => {
     const editor = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
     const focusContainer = editor.shadowRoot!.querySelector(
-      '#focusContainer'
+      '#focusContainer',
     ) as HTMLElement;
     const editableRegion = editor.shadowRoot!.querySelector(
-      '.CodeMirror-code'
+      '.cm-content',
     ) as HTMLElement;
     const keyboardHelp = 'Press Enter';
 
@@ -615,7 +635,7 @@ suite('playground-ide', () => {
 
     // Press Escape to stop editing
     editableRegion.dispatchEvent(
-      new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})
+      new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}),
     );
     await raf();
     assert.isTrue(focusContainer.matches(':focus'));
@@ -663,7 +683,7 @@ suite('playground-ide', () => {
     container.appendChild(ide);
     const project = (await pierce(
       'playground-ide',
-      'playground-project'
+      'playground-project',
     )) as PlaygroundProject;
     // Need to defer another microtask for the config to initialize.
     await new Promise((resolve) => requestAnimationFrame(resolve));
@@ -682,7 +702,7 @@ suite('playground-ide', () => {
     project.addFile('package.json');
     assert.isFalse(project.isValidNewFilename('package.json'));
     const packageJson = project.files?.find(
-      (file) => file.name === 'package.json'
+      (file) => file.name === 'package.json',
     );
     assert.isFalse(packageJson?.hidden);
     assert.equal(packageJson?.content, '{"dependencies":{}}');
@@ -702,18 +722,14 @@ suite('playground-ide', () => {
 
     const project = (await pierce(
       'playground-ide',
-      'playground-project'
+      'playground-project',
     )) as PlaygroundProject;
 
     const editor = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
-
-    const editorInternals = editor as unknown as {
-      _codemirror: PlaygroundCodeEditor['_codemirror'];
-    };
 
     // Need to defer another microtask for the config to initialize.
     await new Promise((resolve) => requestAnimationFrame(resolve));
@@ -738,11 +754,11 @@ suite('playground-ide', () => {
     assert.isFalse(ide.modified);
     assert.isFalse(ide.modified);
 
-    editorInternals._codemirror!.setValue('New content');
+    await setEditorValue(editor, 'New content');
     assert.isTrue(ide.modified);
     assert.isTrue(ide.modified);
 
-    editorInternals._codemirror!.setValue('Old content');
+    await setEditorValue(editor, 'Old content');
     assert.isFalse(ide.modified);
     assert.isFalse(ide.modified);
 
@@ -785,7 +801,7 @@ suite('playground-ide', () => {
 
     const project = (await pierce(
       'playground-ide',
-      'playground-project'
+      'playground-project',
     )) as PlaygroundProject;
     // Need to defer another microtask for the config to initialize.
     await new Promise((resolve) => requestAnimationFrame(resolve));
@@ -832,7 +848,7 @@ suite('playground-ide', () => {
 
     const project = (await pierce(
       'playground-ide',
-      'playground-project'
+      'playground-project',
     )) as PlaygroundProject;
     // Need to defer another microtask for the config to initialize.
     await new Promise((resolve) => requestAnimationFrame(resolve));
@@ -900,7 +916,7 @@ suite('playground-ide', () => {
     const editor = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
 
     const codeToAdd = `console.log("Foo");
@@ -935,7 +951,7 @@ suite('playground-ide', () => {
     const editor = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
 
     await new Promise((resolve) => window.requestAnimationFrame(resolve));
@@ -962,7 +978,7 @@ suite('playground-ide', () => {
       // NOTE: For some reason, the parent window's history only seems to be
       // affected when the iframe origin is different.
       const separateOrigin = (await executeServerCommand(
-        'separate-origin'
+        'separate-origin',
       )) as string;
 
       render(
@@ -975,32 +991,32 @@ suite('playground-ide', () => {
             </script>
           </playground-ide>
         `,
-        container
+        container,
       );
       const iframe = (await pierce(
         'playground-ide',
         'playground-preview',
-        'iframe'
+        'iframe',
       )) as HTMLIFrameElement;
       await waitForIframeLoad(iframe);
 
       const editor = (await pierce(
         'playground-ide',
         'playground-file-editor',
-        'playground-code-editor'
+        'playground-code-editor',
       )) as PlaygroundCodeEditor;
       updateCurrentFile(editor, 'Hello HTML 2');
 
       const project = (await pierce(
         'playground-ide',
-        'playground-project'
+        'playground-project',
       )) as PlaygroundProject;
       project.save();
       await waitForIframeLoad(iframe);
 
       const historyLengthAfter = window.history.length;
       assert.equal(historyLengthAfter, historyLengthBefore);
-    }
+    },
   );
 
   test('reloading preview does not create a new iframe element', async () => {
@@ -1014,12 +1030,12 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
 
     const preview = (await pierce(
       'playground-ide',
-      'playground-preview'
+      'playground-preview',
     )) as PlaygroundPreview;
 
     const iframe = preview.iframe!;
@@ -1029,13 +1045,13 @@ suite('playground-ide', () => {
     const editor = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
     updateCurrentFile(editor, 'Hello HTML 2');
 
     const project = (await pierce(
       'playground-ide',
-      'playground-project'
+      'playground-project',
     )) as PlaygroundProject;
 
     await Promise.all([waitForIframeLoad(iframe), project.save()]);
@@ -1043,7 +1059,7 @@ suite('playground-ide', () => {
     const newIframe = (await pierce(
       'playground-ide',
       'playground-preview',
-      'iframe'
+      'iframe',
     )) as HTMLIFrameElement;
 
     assert.equal(newIframe, iframe);
@@ -1060,22 +1076,22 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     await assertPreviewContains('Hello HTML');
 
     const project = (await pierce(
       'playground-ide',
-      'playground-project'
+      'playground-project',
     )) as PlaygroundProject;
     assert.lengthOf(project.files ?? [], 1);
 
-    // Between MWC v0.25.1 and v0.25.2, when clicking on an <mwc-icon-button>,
-    // the target changed from the <mwc-icon-button> to its internal <svg>.
+    // Historically, clicking the tab bar icon button
+    // the target changed from the element to its internal svg.
     const menuButtonSvg = await pierce(
       'playground-ide',
       'playground-tab-bar',
-      '.menu-button > svg'
+      '.menu-button > svg',
     );
     menuButtonSvg.dispatchEvent(new Event('click', {bubbles: true}));
 
@@ -1083,7 +1099,7 @@ suite('playground-ide', () => {
       'playground-ide',
       'playground-tab-bar',
       'playground-file-system-controls',
-      '#deleteButton'
+      '#deleteButton',
     );
     deleteButton.click();
 
@@ -1126,24 +1142,19 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     const codemirror = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
-    const codemirrorInternals = codemirror as unknown as {
-      _codemirror: PlaygroundCodeEditor['_codemirror'];
-    };
     await assertPreviewContains('Hello JS');
-    codemirrorInternals._codemirror!.setValue(
-      "document.body.textContent = 'Hello 2'"
-    );
+    await setEditorValue(codemirror, "document.body.textContent = 'Hello 2'");
     await assertPreviewContains('Hello 2');
-    codemirrorInternals._codemirror!.undo();
+    undo(await waitForEditorView(codemirror));
     await assertPreviewContains('Hello JS');
-    codemirrorInternals._codemirror!.redo();
+    redo(await waitForEditorView(codemirror));
     await assertPreviewContains('Hello 2');
   });
 
@@ -1162,33 +1173,30 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     const fileEditor = (await pierce(
       'playground-ide',
-      'playground-file-editor'
+      'playground-file-editor',
     )) as PlaygroundFileEditor;
 
     const editor = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
-    const editorInternals = editor as unknown as {
-      _codemirror: PlaygroundCodeEditor['_codemirror'];
-    };
 
     await raf();
     assert.equal(fileEditor.filename, 'hello.js');
-    assert.equal(editorInternals._codemirror!.getValue().trim(), JS_CONTENT);
+    assert.equal((await getEditorValue(editor)).trim(), JS_CONTENT);
 
     fileEditor.filename = 'index.html';
     await raf();
-    editorInternals._codemirror!.undo();
+    undo(await waitForEditorView(editor));
 
     await raf();
     // Expect to still be on the html page.
-    assert.notEqual(editorInternals._codemirror!.getValue().trim(), JS_CONTENT);
+    assert.notEqual((await getEditorValue(editor)).trim(), JS_CONTENT);
   });
 
   test('undo/redo history persists when files change', async () => {
@@ -1206,70 +1214,68 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     const fileEditor = (await pierce(
       'playground-ide',
-      'playground-file-editor'
+      'playground-file-editor',
     )) as PlaygroundFileEditor;
 
     const editor = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
-    const editorInternals = editor as unknown as {
-      _codemirror: PlaygroundCodeEditor['_codemirror'];
-    };
 
     await raf();
     assert.equal(fileEditor.filename, 'hello.js');
-    assert.equal(editorInternals._codemirror!.getValue().trim(), JS_CONTENT);
+    assert.equal((await getEditorValue(editor)).trim(), JS_CONTENT);
 
-    editorInternals._codemirror!.setValue(
-      "document.body.textContent = 'Hello 2'"
-    );
+    await setEditorValue(editor, "document.body.textContent = 'Hello 2'");
 
     fileEditor.filename = 'index.html';
     await raf();
     assert.include(
-      editorInternals._codemirror!.getValue().trim(),
-      `<script type="module" src="hello.js">`
+      (await getEditorValue(editor)).trim(),
+      `<script type="module" src="hello.js">`,
     );
-    editorInternals._codemirror!.setValue(`<body>
+    await setEditorValue(
+      editor,
+      `<body>
     <script type="module" src="hello.js">&lt;/script>
     <p>Add this</p>
-    </body>`);
+    </body>`,
+    );
     await raf();
 
     fileEditor.filename = 'hello.js';
     await raf();
-    assert.include(editorInternals._codemirror!.getValue(), `'Hello 2'`);
+    assert.include(await getEditorValue(editor), `'Hello 2'`);
 
     for (let i = 0; i < 6; i++) {
-      editorInternals._codemirror!.undo();
+      undo(await waitForEditorView(editor));
       await raf();
-      assert.equal(editorInternals._codemirror!.getValue().trim(), JS_CONTENT);
+      assert.equal((await getEditorValue(editor)).trim(), JS_CONTENT);
     }
-    editorInternals._codemirror!.redo();
+    redo(await waitForEditorView(editor));
     await raf();
-    assert.include(editorInternals._codemirror!.getValue(), `'Hello 2'`);
+    assert.include(await getEditorValue(editor), `'Hello 2'`);
 
     fileEditor.filename = 'index.html';
     await raf();
 
-    // index.html file still has history
-    assert.equal(editorInternals._codemirror!.getHistory()?.done.length, 3);
-    assert.include(editorInternals._codemirror!.getValue(), `<p>Add this</p>`);
+    const view = await waitForEditorView(editor);
 
-    editorInternals._codemirror!.undo();
+    // index.html file still has history
+    assert.isAtLeast(undoDepth(view.state), 1);
+    assert.include(await getEditorValue(editor), `<p>Add this</p>`);
+
+    undo(view);
     await raf();
-    assert.isFalse(
-      editorInternals._codemirror!.getValue().includes(`<p>Add this</p>`)
-    );
+    assert.isFalse((await getEditorValue(editor)).includes(`<p>Add this</p>`));
     assert.include(
-      editorInternals._codemirror!.getValue(),
-      `<script type="module" src="hello.js">`
+      await getEditorValue(editor),
+      `<script type="module" src="hello.js">`,
     );
   });
 
@@ -1287,34 +1293,29 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     const project = (await pierce(
       'playground-ide',
-      'playground-project'
+      'playground-project',
     )) as PlaygroundProject;
     const codemirror = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
-    const codemirrorInternals = codemirror as unknown as {
-      _codemirror: PlaygroundCodeEditor['_codemirror'];
-    };
     await raf();
-    assert.include(codemirrorInternals._codemirror!.getValue(), 'Hello JS');
-    codemirrorInternals._codemirror!.setValue(
-      "document.body.textContent = 'Hello 2'"
-    );
+    assert.include(await getEditorValue(codemirror), 'Hello JS');
+    await setEditorValue(codemirror, "document.body.textContent = 'Hello 2'");
     project.renameFile('hello.js', 'potato.js');
     await raf();
-    assert.include(codemirrorInternals._codemirror!.getValue(), 'Hello 2');
-    codemirrorInternals._codemirror!.undo();
+    assert.include(await getEditorValue(codemirror), 'Hello 2');
+    undo(await waitForEditorView(codemirror));
     await raf();
-    assert.include(codemirrorInternals._codemirror!.getValue(), 'Hello JS');
-    codemirrorInternals._codemirror!.redo();
+    assert.include(await getEditorValue(codemirror), 'Hello JS');
+    redo(await waitForEditorView(codemirror));
     await raf();
-    assert.include(codemirrorInternals._codemirror!.getValue(), 'Hello 2');
+    assert.include(await getEditorValue(codemirror), 'Hello 2');
   });
 
   test('code remains folded when switching files', async () => {
@@ -1335,40 +1336,40 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     const EXPECTED_FOLDED = "…console.log('potato');";
     const fileEditor = (await pierce(
       'playground-ide',
-      'playground-file-editor'
+      'playground-file-editor',
     )) as PlaygroundFileEditor;
     const codemirror = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*')
+        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
       ),
-      EXPECTED_FOLDED
+      EXPECTED_FOLDED,
     );
     fileEditor.filename = 'index.html';
     await raf();
     assert.include(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*')
+        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
       ),
-      `src="hello.js"></script>`
+      `src="hello.js"></script>`,
     );
     fileEditor.filename = 'hello.js';
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*')
+        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
       ),
-      EXPECTED_FOLDED
+      EXPECTED_FOLDED,
     );
   });
 
@@ -1392,40 +1393,40 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     const EXPECTED_FOLDED = "…console.log('potato');";
     const fileEditor = (await pierce(
       'playground-ide',
-      'playground-file-editor'
+      'playground-file-editor',
     )) as PlaygroundFileEditor;
     const codemirror = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*')
+        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
       ),
-      EXPECTED_FOLDED
+      EXPECTED_FOLDED,
     );
     fileEditor.filename = 'index.html';
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*')
+        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
       ),
-      '<body>…</body>'
+      '<body>…</body>',
     );
     fileEditor.filename = 'hello.js';
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*')
+        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
       ),
-      EXPECTED_FOLDED
+      EXPECTED_FOLDED,
     );
   });
 
@@ -1447,23 +1448,20 @@ suite('playground-ide', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     const EXPECTED_FOLDED = "…console.log('potato');";
     const codemirror = (await pierce(
       'playground-ide',
       'playground-file-editor',
-      'playground-code-editor'
+      'playground-code-editor',
     )) as PlaygroundCodeEditor;
-    const codemirrorInternals = codemirror as unknown as {
-      _codemirror: PlaygroundCodeEditor['_codemirror'];
-    };
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*')
+        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
       ),
-      EXPECTED_FOLDED
+      EXPECTED_FOLDED,
     );
     codemirror.value = `/* playground-fold */
 document.body.textContent = 'Hello JS';
@@ -1473,19 +1471,19 @@ console.log('tomato');`;
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*')
+        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
       ),
-      "…console.log('tomato');"
+      "…console.log('tomato');",
     );
 
-    codemirrorInternals._codemirror?.undo();
+    undo(await waitForEditorView(codemirror));
     await raf();
 
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*')
+        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
       ),
-      EXPECTED_FOLDED
+      EXPECTED_FOLDED,
     );
   });
 
@@ -1558,7 +1556,7 @@ console.log('tomato');`;
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     const ide = container.firstElementChild as PlaygroundIde;
     await assertTabSelected('a.html');
@@ -1576,7 +1574,7 @@ console.log('tomato');`;
           B
         </script>
       `,
-      ide
+      ide,
     );
     await assertTabSelected('b.html');
     // Nothing selected; should stay on b.html
@@ -1592,7 +1590,7 @@ console.log('tomato');`;
           B
         </script>
       `,
-      ide
+      ide,
     );
     await assertTabSelected('b.html');
   });

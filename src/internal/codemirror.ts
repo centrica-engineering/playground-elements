@@ -4,27 +4,36 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-// Our own specialized CodeMirror bundle (see rollup.config.js).
-import '../_codemirror/codemirror-bundle.js';
-
-// Note it's critical we use `import type` here, or else we'll also import the
-// wrong runtime modules.
-import CodeMirrorCore from 'codemirror';
-import CoreMirrorFolding from 'codemirror/addon/fold/foldcode.js';
-import CodeMirrorHinting from 'codemirror/addon/hint/show-hint.js';
-import CodeMirrorComment from 'codemirror/addon/comment/comment.js';
-
-/**
- * CodeMirror function.
- *
- * This function is defined as window.CodeMirror, but @types/codemirror doesn't
- * declare that.
- */
-export const CodeMirror = (
-  window as {
-    CodeMirror: typeof CodeMirrorCore &
-      typeof CoreMirrorFolding &
-      typeof CodeMirrorHinting &
-      typeof CodeMirrorComment;
-  }
-).CodeMirror;
+export {
+  EditorState,
+  StateEffect,
+  StateField,
+  Compartment,
+} from '@codemirror/state';
+export {
+  EditorView,
+  keymap,
+  Decoration,
+  WidgetType,
+  lineNumbers,
+  type DecorationSet,
+} from '@codemirror/view';
+export {
+  defaultKeymap,
+  history,
+  historyKeymap,
+  indentWithTab,
+  undo,
+  redo,
+  undoDepth,
+  redoDepth,
+  toggleComment,
+} from '@codemirror/commands';
+export {foldGutter, foldKeymap} from '@codemirror/language';
+export {
+  autocompletion,
+  completionKeymap,
+  startCompletion,
+} from '@codemirror/autocomplete';
+export {HighlightStyle, syntaxHighlighting} from '@codemirror/language';
+export {tags} from '@lezer/highlight';
