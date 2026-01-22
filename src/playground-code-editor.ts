@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import {LitElement, css, html, nothing, PropertyValues} from 'lit';
-import {customElement, property, query, state} from 'lit/decorators.js';
-import {ifDefined} from 'lit/directives/if-defined.js';
+import { LitElement, css, html, nothing, PropertyValues } from 'lit';
+import { customElement, property, query, state } from 'lit/decorators.js';
+import { ifDefined } from 'lit/directives/if-defined.js';
 import {
   autocompletion,
   completionKeymap,
@@ -33,24 +33,24 @@ import {
 } from './internal/codemirror.js';
 import playgroundStyles from './playground-styles.js';
 import './internal/overlay.js';
-import {Diagnostic} from 'vscode-languageserver-protocol';
+import { Diagnostic } from 'vscode-languageserver-protocol';
 import {
   EditorCompletion,
   EditorCompletionDetails,
   EditorPosition,
   EditorToken,
 } from './shared/worker-api.js';
-import {javascript} from '@codemirror/lang-javascript';
-import {html as htmlLang} from '@codemirror/lang-html';
-import {css as cssLang} from '@codemirror/lang-css';
-import {json as jsonLang} from '@codemirror/lang-json';
-import {Transaction, type Extension} from '@codemirror/state';
+import { javascript } from '@codemirror/lang-javascript';
+import { html as htmlLang } from '@codemirror/lang-html';
+import { css as cssLang } from '@codemirror/lang-css';
+import { json as jsonLang } from '@codemirror/lang-json';
+import { Transaction, type Extension } from '@codemirror/state';
 import type {
   Completion,
   CompletionContext,
   CompletionResult,
 } from '@codemirror/autocomplete';
-import {ViewPlugin, type ViewUpdate} from '@codemirror/view';
+import { ViewPlugin, type ViewUpdate } from '@codemirror/view';
 
 // TODO(aomarks) Could we upstream this to lit-element? It adds much stricter
 // types to the ChangedProperties type.
@@ -60,26 +60,26 @@ interface TypedMap<T> {
 }
 
 const highlightClasses = HighlightStyle.define([
-  {tag: tags.keyword, class: 'cm-keyword'},
+  { tag: tags.keyword, class: 'cm-keyword' },
   // In CM6, some things (notably CSS color keywords like "blue") are tagged as
   // `atom`. In CM5 these aligned more closely with `keyword` styling in this
   // project, so we map `atom` to the keyword class.
-  {tag: tags.atom, class: 'cm-keyword'},
-  {tag: [tags.bool, tags.null], class: 'cm-atom'},
-  {tag: tags.number, class: 'cm-number'},
-  {tag: tags.definition(tags.variableName), class: 'cm-def'},
-  {tag: tags.variableName, class: 'cm-variable'},
+  { tag: tags.atom, class: 'cm-keyword' },
+  { tag: [tags.bool, tags.null], class: 'cm-atom' },
+  { tag: tags.number, class: 'cm-number' },
+  { tag: tags.definition(tags.variableName), class: 'cm-def' },
+  { tag: tags.variableName, class: 'cm-variable' },
   // JSON object keys are typically tagged as `propertyName`. In CM5 they were
   // styled like strings in this project.
-  {tag: tags.propertyName, class: 'cm-string'},
-  {tag: tags.operator, class: 'cm-operator'},
-  {tag: tags.typeName, class: 'cm-type'},
-  {tag: tags.tagName, class: 'cm-tag'},
-  {tag: tags.attributeName, class: 'cm-attribute'},
-  {tag: [tags.string, tags.special(tags.string)], class: 'cm-string'},
-  {tag: tags.comment, class: 'cm-comment'},
-  {tag: tags.meta, class: 'cm-meta'},
-  {tag: tags.invalid, class: 'cm-error'},
+  { tag: tags.propertyName, class: 'cm-string' },
+  { tag: tags.operator, class: 'cm-operator' },
+  { tag: tags.typeName, class: 'cm-type' },
+  { tag: tags.tagName, class: 'cm-tag' },
+  { tag: tags.attributeName, class: 'cm-attribute' },
+  { tag: [tags.string, tags.special(tags.string)], class: 'cm-string' },
+  { tag: tags.comment, class: 'cm-comment' },
+  { tag: tags.meta, class: 'cm-meta' },
+  { tag: tags.invalid, class: 'cm-error' },
 ]);
 
 const hideLineNumbersFromAT = ViewPlugin.fromClass(
@@ -123,29 +123,35 @@ const codeMirrorTheme = EditorView.theme({
 });
 
 class FoldMarkerWidget extends WidgetType {
-  constructor(private readonly onClick: () => void) {
+  constructor(
+    private readonly _from: number,
+    private readonly _to: number,
+  ) {
     super();
   }
 
-  override toDOM() {
+  override toDOM(view: EditorView) {
     const span = document.createElement('span');
     span.textContent = '…';
     span.className = 'cm-foldmarker';
     span.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      this.onClick();
+      view.dispatch({
+        effects: togglePragmaFoldEffect.of({ from: this._from, to: this._to }),
+      });
     });
     return span;
   }
 }
 
 type PragmaRegion =
-  | {kind: 'comment'; from: number; to: number; readOnly: boolean}
-  | {kind: 'hide'; from: number; to: number; readOnly: boolean}
-  | {kind: 'fold'; from: number; to: number; readOnly: boolean};
+  | { kind: 'comment'; from: number; to: number; readOnly: boolean }
+  | { kind: 'hide'; from: number; to: number; readOnly: boolean }
+  | { kind: 'fold'; from: number; to: number; readOnly: boolean };
 
 const setDiagnosticsEffect = StateEffect.define<Diagnostic[] | undefined>();
 const setPragmaRegionsEffect = StateEffect.define<PragmaRegion[]>();
+const togglePragmaFoldEffect = StateEffect.define<{ from: number; to: number }>();
 
 const diagnosticsField = StateField.define<DecorationSet>({
   create() {
@@ -171,7 +177,7 @@ const diagnosticsField = StateField.define<DecorationSet>({
           );
           if (start === null || end === null || end <= start) continue;
           ranges.push(
-            Decoration.mark({class: `diagnostic diagnostic-${i}`}).range(
+            Decoration.mark({ class: `diagnostic diagnostic-${i}` }).range(
               start,
               end,
             ),
@@ -185,51 +191,98 @@ const diagnosticsField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 });
 
-const pragmaField = StateField.define<{
+type PragmaState = {
   decorations: DecorationSet;
   readOnlyRanges: Array<[number, number]>;
-}>({
+  regions: PragmaRegion[];
+  expandedFolds: Array<[number, number]>;
+};
+
+const pragmaField = StateField.define<PragmaState>({
   create() {
-    return {decorations: Decoration.none, readOnlyRanges: []};
+    return {
+      decorations: Decoration.none,
+      readOnlyRanges: [],
+      regions: [],
+      expandedFolds: [],
+    };
   },
   update(value, tr) {
-    const mappedReadOnly = value.readOnlyRanges
-      .map(([from, to]) => {
-        const newFrom = tr.changes.mapPos(from, 1);
-        const newTo = tr.changes.mapPos(to, -1);
-        return [newFrom, newTo] as [number, number];
-      })
-      .filter(([from, to]) => to > from);
+    const mapRange = ([from, to]: [number, number]) => {
+      const newFrom = tr.changes.mapPos(from, 1);
+      const newTo = tr.changes.mapPos(to, -1);
+      return [newFrom, newTo] as [number, number];
+    };
+
     value = {
       decorations: value.decorations.map(tr.changes),
-      readOnlyRanges: mappedReadOnly,
+      readOnlyRanges: value.readOnlyRanges.map(mapRange).filter(([f, t]) => t > f),
+      regions: value.regions,
+      expandedFolds: value.expandedFolds.map(mapRange).filter(([f, t]) => t > f),
+    };
+
+    const rebuild = (regions: PragmaRegion[], expanded: Array<[number, number]>) => {
+      const expandedSet = new Set(expanded.map(([f, t]) => `${f}:${t}`));
+      const ranges: Array<ReturnType<Decoration['range']>> = [];
+      const readOnlyRanges: Array<[number, number]> = [];
+
+      for (const region of regions) {
+        if (region.kind === 'comment') {
+          ranges.push(Decoration.replace({}).range(region.from, region.to));
+        } else if (region.kind === 'hide') {
+          ranges.push(Decoration.replace({}).range(region.from, region.to));
+          if (region.readOnly) readOnlyRanges.push([region.from, region.to]);
+        } else if (region.kind === 'fold') {
+          const from = region.from;
+          const to = region.to;
+          if (!expandedSet.has(`${from}:${to}`)) {
+            ranges.push(
+              Decoration.replace({
+                widget: new FoldMarkerWidget(from, to),
+              }).range(from, to),
+            );
+          }
+          if (region.readOnly) readOnlyRanges.push([from, to]);
+        }
+      }
+      return { decorations: Decoration.set(ranges, true), readOnlyRanges };
     };
 
     for (const effect of tr.effects) {
       if (effect.is(setPragmaRegionsEffect)) {
-        const ranges: Array<ReturnType<Decoration['range']>> = [];
-        const readOnlyRanges: Array<[number, number]> = [];
+        const regions = effect.value;
+        // If pragmas are disabled, clear any expanded fold state.
+        const expandedFolds = regions.length === 0 ? [] : value.expandedFolds;
+        const rebuilt = rebuild(regions, expandedFolds);
+        return {
+          ...value,
+          regions,
+          expandedFolds,
+          ...rebuilt,
+        };
+      }
 
-        for (const region of effect.value) {
-          if (region.kind === 'comment') {
-            ranges.push(Decoration.replace({}).range(region.from, region.to));
-          } else if (region.kind === 'hide') {
-            ranges.push(Decoration.replace({}).range(region.from, region.to));
-            if (region.readOnly) readOnlyRanges.push([region.from, region.to]);
-          } else if (region.kind === 'fold') {
-            const from = region.from;
-            const to = region.to;
-            ranges.push(
-              Decoration.replace({
-                widget: new FoldMarkerWidget(() => {
-                  // Currently a visual marker only.
-                }),
-              }).range(from, to),
-            );
-            if (region.readOnly) readOnlyRanges.push([from, to]);
-          }
+      if (effect.is(togglePragmaFoldEffect)) {
+        const { from, to } = effect.value;
+        const key = `${from}:${to}`;
+        const expandedSet = new Set(value.expandedFolds.map(([f, t]) => `${f}:${t}`));
+        if (expandedSet.has(key)) {
+          expandedSet.delete(key);
+        } else {
+          expandedSet.add(key);
         }
-        return {decorations: Decoration.set(ranges, true), readOnlyRanges};
+        const expandedFolds = Array.from(expandedSet)
+          .map((k) => {
+            const [f, t] = k.split(':');
+            return [Number(f), Number(t)] as [number, number];
+          })
+          .filter(([f, t]) => Number.isFinite(f) && Number.isFinite(t) && t > f);
+        const rebuilt = rebuild(value.regions, expandedFolds);
+        return {
+          ...value,
+          expandedFolds,
+          ...rebuilt,
+        };
       }
     }
 
@@ -277,9 +330,39 @@ function tokenUnderCursor(state: EditorState): EditorToken {
   let end = offset;
   while (start > 0 && isWord(text[start - 1])) start--;
   while (end < text.length && isWord(text[end])) end++;
-  return {start, end, string: text.slice(start, end)};
+  return { start, end, string: text.slice(start, end) };
 }
 
+const htmlTargetNearCursor = (state: EditorState) => {
+  const pos = state.selection.main.from;
+  const from = Math.max(0, pos - 2000);
+  const to = Math.min(state.doc.length, pos + 2000);
+  const windowText = state.doc.sliceString(from, to);
+  const relPos = pos - from;
+
+  const lt = windowText.lastIndexOf('<', relPos);
+  if (lt === -1) return undefined;
+  const gt = windowText.indexOf('>', lt);
+  if (gt === -1) return undefined;
+
+  const tagText = windowText.slice(lt, gt + 1);
+  if (tagText.startsWith('</') || tagText.startsWith('<!')) return undefined;
+
+  const tagNameMatch = tagText.match(/^<\s*([a-zA-Z][\w:-]*)/);
+  const tagName = tagNameMatch?.[1];
+
+  const idMatch = tagText.match(/\bid\s*=\s*("([^"]+)"|'([^']+)')/i);
+  const id = idMatch?.[2] ?? idMatch?.[3];
+
+  const classMatch = tagText.match(
+    /\bclass\s*=\s*("([^"]+)"|'([^']+)')/i,
+  );
+  const classAttr = classMatch?.[2] ?? classMatch?.[3];
+  const className = classAttr?.trim().split(/\s+/)[0];
+
+  if (!tagName && !id && !className) return undefined;
+  return { tagName, id, className };
+};
 /**
  * A basic text editor with syntax highlighting for HTML, CSS, and JavaScript.
  */
@@ -376,10 +459,10 @@ export class PlaygroundCodeEditor extends LitElement {
 
   get cursorPosition(): EditorPosition {
     const view = this._view;
-    if (!view) return {ch: 0, line: 0};
+    if (!view) return { ch: 0, line: 0 };
     const pos = view.state.selection.main.from;
     const line = view.state.doc.lineAt(pos);
-    return {line: line.number - 1, ch: pos - line.from};
+    return { line: line.number - 1, ch: pos - line.from };
   }
 
   get cursorIndex(): number {
@@ -390,7 +473,7 @@ export class PlaygroundCodeEditor extends LitElement {
 
   get tokenUnderCursor(): EditorToken {
     const view = this._view;
-    if (!view) return {start: 0, end: 0, string: ''};
+    if (!view) return { start: 0, end: 0, string: '' };
     return tokenUnderCursor(view.state);
   }
 
@@ -421,7 +504,7 @@ export class PlaygroundCodeEditor extends LitElement {
   // The document key whose state is currently installed in `_view`.
   private _activeDocumentKey?: object;
 
-  @property({attribute: false})
+  @property({ attribute: false })
   get documentKey(): object | undefined {
     return this._documentKey;
   }
@@ -450,31 +533,31 @@ export class PlaygroundCodeEditor extends LitElement {
    * If true, display a left-hand-side gutter with line numbers. Default false
    * (hidden).
    */
-  @property({type: Boolean, attribute: 'line-numbers', reflect: true})
+  @property({ type: Boolean, attribute: 'line-numbers', reflect: true })
   lineNumbers = false;
 
   /**
    * If true, wrap for long lines. Default false
    */
-  @property({type: Boolean, attribute: 'line-wrapping', reflect: true})
+  @property({ type: Boolean, attribute: 'line-wrapping', reflect: true })
   lineWrapping = false;
 
   /**
    * If true, this editor is not editable.
    */
-  @property({type: Boolean, reflect: true})
+  @property({ type: Boolean, reflect: true })
   readonly = false;
 
   /**
    * If true, will disable code completions in the code-editor.
    */
-  @property({type: Boolean, attribute: 'no-completions'})
+  @property({ type: Boolean, attribute: 'no-completions' })
   noCompletions = false;
 
   /**
    * Diagnostics to display on the current file.
    */
-  @property({attribute: false})
+  @property({ attribute: false })
   diagnostics?: Array<Diagnostic>;
 
   /**
@@ -596,13 +679,13 @@ export class PlaygroundCodeEditor extends LitElement {
         @keydown=${this._onKeyDown}
       >
         ${this._showKeyboardHelp
-          ? html`<playground-internal-overlay>
+        ? html`<playground-internal-overlay>
               <p id="keyboardHelp" part="dialog">
                 Press <strong>Enter</strong> to start editing<br />
                 Press <strong>Escape</strong> to exit editor
               </p>
             </playground-internal-overlay>`
-          : nothing}
+        : nothing}
         ${this._cmDom}
         <div
           id="tooltip"
@@ -738,7 +821,7 @@ export class PlaygroundCodeEditor extends LitElement {
 
   private _createState(doc: string): EditorState {
     const extensions: Extension[] = [
-      history({newGroupDelay: 0}),
+      history({ newGroupDelay: 0 }),
       keymap.of([
         ...historyKeymap,
         ...completionKeymap,
@@ -765,7 +848,7 @@ export class PlaygroundCodeEditor extends LitElement {
       ]),
       // CM5 tests assert on line text content, and the CM6 default fold gutter
       // uses visible glyphs. Disable those glyphs to keep assertions stable.
-      foldGutter({openText: '', closedText: ''}),
+      foldGutter({ openText: '', closedText: '' }),
       codeMirrorTheme,
       syntaxHighlighting(highlightClasses),
       hideLineNumbersFromAT,
@@ -773,21 +856,42 @@ export class PlaygroundCodeEditor extends LitElement {
       pragmaField,
       templateHighlightsField,
       EditorView.updateListener.of((update) => {
-        if (!update.docChanged) return;
-        this._value = update.state.doc.toString();
-        if (this._activeDocumentKey) {
-          this._docCache.set(this._activeDocumentKey, update.state);
+        if (update.docChanged) {
+          this._value = update.state.doc.toString();
+          if (this._activeDocumentKey) {
+            this._docCache.set(this._activeDocumentKey, update.state);
+          }
+          if (!this._valueChangingFromOutside) {
+            this.dispatchEvent(new Event('change'));
+          }
+          this._syncPragmas();
+          this._syncTemplateHighlights();
         }
-        if (!this._valueChangingFromOutside) {
-          this.dispatchEvent(new Event('change'));
+
+        if (update.selectionSet || update.docChanged) {
+          const pos = update.state.selection.main.from;
+          const line = update.state.doc.lineAt(pos);
+          const detail = {
+            docChanged: update.docChanged,
+            cursorIndex: pos,
+            lineNumber: line.number,
+            column: pos - line.from,
+            htmlTarget:
+              this.type === 'html' ? htmlTargetNearCursor(update.state) : null,
+          };
+          this.dispatchEvent(
+            new CustomEvent('cursor-position-changed', {
+              detail,
+              bubbles: true,
+              composed: true,
+            }),
+          );
         }
-        this._syncPragmas();
-        this._syncTemplateHighlights();
       }),
       // Don't allow naturally tabbing into the editor, because it's a
       // tab-trap. Instead, the container is focusable, and Enter/Escape are
       // used to explicitly enter the editable area.
-      EditorView.contentAttributes.of({tabindex: '-1'}),
+      EditorView.contentAttributes.of({ tabindex: '-1' }),
       this._languageCompartment.of([]),
       this._lineNumbersCompartment.of([]),
       this._lineWrappingCompartment.of([]),
@@ -795,7 +899,7 @@ export class PlaygroundCodeEditor extends LitElement {
       this._completionCompartment.of([]),
       this._viewportMarginCompartment.of([]),
     ];
-    return EditorState.create({doc, extensions});
+    return EditorState.create({ doc, extensions });
   }
 
   private _syncViewConfiguration() {
@@ -847,7 +951,7 @@ export class PlaygroundCodeEditor extends LitElement {
     const cur = view.state.doc.toString();
     if (cur !== desiredDoc) {
       view.dispatch({
-        changes: {from: 0, to: view.state.doc.length, insert: desiredDoc},
+        changes: { from: 0, to: view.state.doc.length, insert: desiredDoc },
         annotations: addToHistory
           ? undefined
           : Transaction.addToHistory.of(false),
@@ -863,7 +967,7 @@ export class PlaygroundCodeEditor extends LitElement {
     const cur = view.state.doc.toString();
     if (cur === value) return;
     view.dispatch({
-      changes: {from: 0, to: view.state.doc.length, insert: value},
+      changes: { from: 0, to: view.state.doc.length, insert: value },
     });
     if (this._activeDocumentKey) {
       this._docCache.set(this._activeDocumentKey, view.state);
@@ -877,13 +981,13 @@ export class PlaygroundCodeEditor extends LitElement {
     const lang = (() => {
       switch (this.type) {
         case 'ts':
-          return javascript({typescript: true});
+          return javascript({ typescript: true });
         case 'js':
-          return javascript({typescript: false});
+          return javascript({ typescript: false });
         case 'jsx':
-          return javascript({jsx: true, typescript: false});
+          return javascript({ jsx: true, typescript: false });
         case 'tsx':
-          return javascript({jsx: true, typescript: true});
+          return javascript({ jsx: true, typescript: true });
         case 'html':
           return htmlLang();
         case 'css':
@@ -895,21 +999,21 @@ export class PlaygroundCodeEditor extends LitElement {
       }
     })();
 
-    view.dispatch({effects: this._languageCompartment.reconfigure(lang)});
+    view.dispatch({ effects: this._languageCompartment.reconfigure(lang) });
   }
 
   private _syncLineNumbers() {
     const view = this._view;
     if (!view) return;
     const ext: Extension = this.lineNumbers ? lineNumbers() : [];
-    view.dispatch({effects: this._lineNumbersCompartment.reconfigure(ext)});
+    view.dispatch({ effects: this._lineNumbersCompartment.reconfigure(ext) });
   }
 
   private _syncLineWrapping() {
     const view = this._view;
     if (!view) return;
     const ext: Extension = this.lineWrapping ? EditorView.lineWrapping : [];
-    view.dispatch({effects: this._lineWrappingCompartment.reconfigure(ext)});
+    view.dispatch({ effects: this._lineWrappingCompartment.reconfigure(ext) });
   }
 
   private _syncReadonly() {
@@ -918,7 +1022,7 @@ export class PlaygroundCodeEditor extends LitElement {
     const ext: Extension = this.readonly
       ? [EditorState.readOnly.of(true), EditorView.editable.of(false)]
       : [];
-    view.dispatch({effects: this._readOnlyCompartment.reconfigure(ext)});
+    view.dispatch({ effects: this._readOnlyCompartment.reconfigure(ext) });
   }
 
   private _syncCompletions() {
@@ -928,24 +1032,24 @@ export class PlaygroundCodeEditor extends LitElement {
     const enabled = !this.noCompletions && this.type === 'ts';
     const ext: Extension = enabled
       ? autocompletion({
-          override: [this._completionSource.bind(this)],
-          // Avoid flakiness where Arrow keys typed immediately after opening
-          // completion go to the editor instead of the completion list.
-          interactionDelay: 0,
-          addToOptions: [
-            {
-              position: 50,
-              render: (completion) => {
-                const span = document.createElement('span');
-                span.className = 'hint-object-name';
-                span.textContent = completion.label;
-                return span;
-              },
+        override: [this._completionSource.bind(this)],
+        // Avoid flakiness where Arrow keys typed immediately after opening
+        // completion go to the editor instead of the completion list.
+        interactionDelay: 0,
+        addToOptions: [
+          {
+            position: 50,
+            render: (completion) => {
+              const span = document.createElement('span');
+              span.className = 'hint-object-name';
+              span.textContent = completion.label;
+              return span;
             },
-          ],
-        })
+          },
+        ],
+      })
       : [];
-    view.dispatch({effects: this._completionCompartment.reconfigure(ext)});
+    view.dispatch({ effects: this._completionCompartment.reconfigure(ext) });
   }
 
   private async _completionSource(
@@ -969,8 +1073,8 @@ export class PlaygroundCodeEditor extends LitElement {
       tokenText.length > this._lastCompletionToken.length &&
       tokenText.startsWith(this._lastCompletionToken) &&
       cursorIndex ===
-        this._lastCompletionCursorIndex +
-          (tokenText.length - this._lastCompletionToken.length);
+      this._lastCompletionCursorIndex +
+      (tokenText.length - this._lastCompletionToken.length);
 
     const fileContent = context.state.doc.toString();
 
@@ -997,11 +1101,11 @@ export class PlaygroundCodeEditor extends LitElement {
       apply: c.text,
       info: c.details
         ? async () => {
-            const details: EditorCompletionDetails = await c.details!;
-            const div = document.createElement('div');
-            div.textContent = details.text;
-            return div;
-          }
+          const details: EditorCompletionDetails = await c.details!;
+          const div = document.createElement('div');
+          div.textContent = details.text;
+          return div;
+        }
         : undefined,
     }));
 
@@ -1009,13 +1113,13 @@ export class PlaygroundCodeEditor extends LitElement {
     const to = match?.to ?? context.pos;
     // Disable CM6's built-in filtering, since the project provider already
     // performs its own fuzzy ranking and trimming.
-    return {from, to, options, filter: false};
+    return { from, to, options, filter: false };
   }
 
   private _syncDiagnostics() {
     const view = this._view;
     if (!view) return;
-    view.dispatch({effects: setDiagnosticsEffect.of(this.diagnostics)});
+    view.dispatch({ effects: setDiagnosticsEffect.of(this.diagnostics) });
   }
 
   private _syncPragmas() {
@@ -1023,7 +1127,7 @@ export class PlaygroundCodeEditor extends LitElement {
     if (!view) return;
     const pattern = this._maskPatternForLang();
     if (!pattern || this.pragmas === 'off-visible') {
-      view.dispatch({effects: setPragmaRegionsEffect.of([])});
+      view.dispatch({ effects: setPragmaRegionsEffect.of([]) });
       return;
     }
 
@@ -1081,7 +1185,7 @@ export class PlaygroundCodeEditor extends LitElement {
         }
       }
     }
-    view.dispatch({effects: setPragmaRegionsEffect.of(regions)});
+    view.dispatch({ effects: setPragmaRegionsEffect.of(regions) });
   }
 
   private _syncTemplateHighlights() {
@@ -1098,7 +1202,7 @@ export class PlaygroundCodeEditor extends LitElement {
         const i = t.index;
         if (i === undefined) continue;
         decos.push(
-          Decoration.mark({class: 'cm-tag'}).range(i, i + t[0].length),
+          Decoration.mark({ class: 'cm-tag' }).range(i, i + t[0].length),
         );
       }
       view.dispatch({
@@ -1108,7 +1212,7 @@ export class PlaygroundCodeEditor extends LitElement {
     }
 
     if (this.type !== 'js' && this.type !== 'ts') {
-      view.dispatch({effects: setTemplateHighlightsEffect.of(Decoration.none)});
+      view.dispatch({ effects: setTemplateHighlightsEffect.of(Decoration.none) });
       return;
     }
 
@@ -1127,7 +1231,7 @@ export class PlaygroundCodeEditor extends LitElement {
           const i = t.index;
           if (i === undefined) continue;
           decos.push(
-            Decoration.mark({class: 'cm-tag'}).range(
+            Decoration.mark({ class: 'cm-tag' }).range(
               bodyStart + i,
               bodyStart + i + t[0].length,
             ),
@@ -1139,7 +1243,7 @@ export class PlaygroundCodeEditor extends LitElement {
           if (i === undefined) continue;
           if (w[0] === 'blue') {
             decos.push(
-              Decoration.mark({class: 'cm-keyword'}).range(
+              Decoration.mark({ class: 'cm-keyword' }).range(
                 bodyStart + i,
                 bodyStart + i + w[0].length,
               ),
@@ -1206,7 +1310,7 @@ export class PlaygroundCodeEditor extends LitElement {
     } else {
       position += `right:${Math.max(0, hostRect.right - spanRect.right)}px`;
     }
-    this._tooltipDiagnostic = {diagnostic, position};
+    this._tooltipDiagnostic = { diagnostic, position };
   };
 }
 

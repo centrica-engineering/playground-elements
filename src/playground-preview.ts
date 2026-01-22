@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import {html, css, PropertyValues, nothing, TemplateResult} from 'lit';
-import {customElement, property, query, state} from 'lit/decorators.js';
-import {classMap} from 'lit/directives/class-map.js';
+import { html, css, PropertyValues, nothing, TemplateResult } from 'lit';
+import { customElement, property, query, state } from 'lit/decorators.js';
+import { classMap } from 'lit/directives/class-map.js';
 import '@material/web/iconbutton/icon-button.js';
-import {PlaygroundProject} from './playground-project.js';
+import { PlaygroundProject } from './playground-project.js';
 import '@material/web/progress/linear-progress.js';
-import {PlaygroundConnectedElement} from './playground-connected-element.js';
+import { PlaygroundConnectedElement } from './playground-connected-element.js';
 import './internal/overlay.js';
 
 /**
@@ -138,7 +138,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
   /**
    * The HTML file used in the preview.
    */
-  @property({attribute: 'html-file'})
+  @property({ attribute: 'html-file' })
   htmlFile = 'index.html';
 
   /**
@@ -150,7 +150,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
   /**
    * Color blindness filter to apply to the preview.
    */
-  @property({attribute: 'color-blindness'})
+  @property({ attribute: 'color-blindness' })
   colorBlindness?: string;
 
   @query('iframe', true)
@@ -176,6 +176,68 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
    */
   @state()
   private _loadedAtLeastOnce = false;
+
+  private _pendingScrollTarget?: {
+    fileName: string;
+    lineNumber?: number;
+    column?: number;
+    cursorIndex?: number;
+    htmlTarget?: { tagName?: string; id?: string; className?: string } | null;
+  };
+
+  private readonly _scrollPositions = new Map<string, { x: number; y: number }>();
+  private readonly _onWindowMessage = (event: MessageEvent) => {
+    const iframeWindow = this.iframe?.contentWindow;
+    if (!iframeWindow || event.source !== iframeWindow) {
+      return;
+    }
+
+    const data = event.data as
+      | {
+        type: 'playground-preview-scroll';
+        key: string;
+        x: number;
+        y: number;
+      }
+      | {
+        type: 'playground-preview-scroll-request';
+        key: string;
+      }
+      | undefined;
+
+    if (!data || typeof data !== 'object') {
+      return;
+    }
+
+    if (data.type === 'playground-preview-scroll') {
+      if (typeof data.key === 'string') {
+        const x = typeof data.x === 'number' ? data.x : 0;
+        const y = typeof data.y === 'number' ? data.y : 0;
+        this._scrollPositions.set(data.key, { x, y });
+      }
+      return;
+    }
+
+    if (data.type === 'playground-preview-scroll-request') {
+      if (typeof data.key !== 'string') {
+        return;
+      }
+      const pos = this._scrollPositions.get(data.key);
+      if (!pos) {
+        return;
+      }
+      // Respond only to the requesting origin.
+      (event.source as WindowProxy).postMessage(
+        {
+          type: 'playground-preview-scroll-restore',
+          key: data.key,
+          x: pos.x,
+          y: pos.y,
+        },
+        event.origin,
+      );
+    }
+  };
 
   /**
    * An error to display instead of the iframe when something has gone wrong.
@@ -211,6 +273,16 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
     }
   }
 
+  override connectedCallback(): void {
+    super.connectedCallback();
+    window.addEventListener('message', this._onWindowMessage);
+  }
+
+  override disconnectedCallback(): void {
+    window.removeEventListener('message', this._onWindowMessage);
+    super.disconnectedCallback();
+  }
+
   override update(changedProperties: PropertyValues) {
     if (changedProperties.has('_project')) {
       const oldProject = changedProperties.get('_project') as PlaygroundProject;
@@ -219,13 +291,58 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
         // To be more responsive, we start loading as soon as compilation
         // starts. This is safe because requests block on compilation finishing.
         oldProject.removeEventListener('compileStart', this.reload);
+        oldProject.removeEventListener(
+          'preview-scroll-target',
+          this._onPreviewScrollTarget as EventListener,
+        );
       }
       if (this._project) {
         this._project.addEventListener('urlChanged', this.reload);
         this._project.addEventListener('compileStart', this.reload);
+        this._project.addEventListener(
+          'preview-scroll-target',
+          this._onPreviewScrollTarget as EventListener,
+        );
       }
     }
     super.update(changedProperties);
+  }
+
+  private _normalizeFileName(name: string) {
+    return name.replace(/^\.\/+/, '');
+  }
+
+  private _onPreviewScrollTarget = (e: Event) => {
+    const ce = e as CustomEvent;
+    const detail = ce.detail as PlaygroundPreview['_pendingScrollTarget'] | undefined;
+    if (!detail?.fileName) return;
+
+    // Only react to events for the HTML file used in the preview.
+    if (
+      this._normalizeFileName(detail.fileName) !==
+      this._normalizeFileName(this.htmlFile)
+    ) {
+      return;
+    }
+    this._pendingScrollTarget = detail;
+  };
+
+  private _postScrollTargetToIframe() {
+    const iframeWindow = this.iframe?.contentWindow;
+    if (!iframeWindow) return;
+    const target = this._pendingScrollTarget;
+    if (!target) return;
+    iframeWindow.postMessage(
+      {
+        type: 'playground-preview-scroll-target',
+        fileName: target.fileName,
+        lineNumber: target.lineNumber,
+        column: target.column,
+        cursorIndex: target.cursorIndex,
+        htmlTarget: target.htmlTarget ?? undefined,
+      },
+      '*',
+    );
   }
 
   private get _indexUrl() {
@@ -263,7 +380,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
         </md-icon-button>
       </div>
 
-      <div id="content" class=${classMap({error: !!this._error})}>
+      <div id="content" class=${classMap({ error: !!this._error })}>
         <md-linear-progress
           aria-label="Preview is loading"
           aria-hidden=${this._loading ? 'false' : 'true'}
@@ -352,8 +469,8 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
         <iframe
           part="preview-iframe"
           class=${classMap({
-            [this.colorBlindness || '']: !!this.colorBlindness,
-          })}
+      [this.colorBlindness || '']: !!this.colorBlindness,
+    })}
           title="Project preview"
           @load=${this._onIframeLoad}
           ?hidden=${!this._loadedAtLeastOnce}
@@ -389,7 +506,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
     // window (on Chrome but not Firefox, and only when the parent/iframe origins
     // are different). Removing the iframe from the DOM while we initiate the
     // reload prevents a history entry from being added.
-    const {parentNode, nextSibling} = iframe;
+    const { parentNode, nextSibling } = iframe;
     if (parentNode) {
       iframe.remove();
     }
@@ -414,7 +531,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
   }
 
   private _slotHasAnyVisibleChildren() {
-    const assigned = this._slot?.assignedNodes({flatten: true});
+    const assigned = this._slot?.assignedNodes({ flatten: true });
     if (!assigned) {
       return false;
     }
@@ -440,6 +557,10 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
       this._loading = false;
       this._loadedAtLeastOnce = true;
       this._showLoadingBar = false;
+
+      // If we have a recent cursor context from the HTML editor, try to scroll
+      // the preview to the relevant element.
+      this._postScrollTargetToIframe();
     }
   }
 }

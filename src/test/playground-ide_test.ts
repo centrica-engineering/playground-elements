@@ -4,19 +4,19 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import {assert} from '@esm-bundle/chai';
-import {html, render} from 'lit';
-import {PlaygroundIde} from '../playground-ide.js';
+import { assert } from '@esm-bundle/chai';
+import { html, render } from 'lit';
+import { PlaygroundIde } from '../playground-ide.js';
 import '../playground-ide.js';
-import {sendKeys, executeServerCommand} from '@web/test-runner-commands';
+import { sendKeys, executeServerCommand } from '@web/test-runner-commands';
 
-import {ReactiveElement} from '@lit/reactive-element';
-import {PlaygroundCodeEditor} from '../playground-code-editor.js';
-import {PlaygroundProject} from '../playground-project.js';
-import {PlaygroundFileEditor} from '../playground-file-editor.js';
-import {PlaygroundPreview} from '../playground-preview.js';
-import {redo, undo, undoDepth} from '../internal/codemirror.js';
-import type {EditorView} from '../internal/codemirror.js';
+import { ReactiveElement } from '@lit/reactive-element';
+import { PlaygroundCodeEditor } from '../playground-code-editor.js';
+import { PlaygroundProject } from '../playground-project.js';
+import { PlaygroundFileEditor } from '../playground-file-editor.js';
+import { PlaygroundPreview } from '../playground-preview.js';
+import { redo, undo, undoDepth } from '../internal/codemirror.js';
+import type { EditorView } from '../internal/codemirror.js';
 
 // There is browser variability with zero width spaces. This helper keeps tests
 // consistent.
@@ -46,7 +46,7 @@ suite('playground-ide', () => {
 
   const waitForEditorView = async (editor: PlaygroundCodeEditor) => {
     for (let i = 0; i < 10; i++) {
-      const view = (editor as unknown as {_view?: EditorView})._view;
+      const view = (editor as unknown as { _view?: EditorView })._view;
       if (view) return view;
       await raf();
     }
@@ -62,7 +62,7 @@ suite('playground-ide', () => {
   ) => {
     const view = await waitForEditorView(editor);
     view.dispatch({
-      changes: {from: 0, to: view.state.doc.length, insert: value},
+      changes: { from: 0, to: view.state.doc.length, insert: value },
     });
   };
 
@@ -90,7 +90,7 @@ suite('playground-ide', () => {
 
   const waitForIframeLoad = (iframe: HTMLElement) =>
     new Promise<void>((resolve) => {
-      iframe.addEventListener('load', () => resolve(), {once: true});
+      iframe.addEventListener('load', () => resolve(), { once: true });
     });
 
   const assertPreviewContains = async (text: string) => {
@@ -628,14 +628,14 @@ suite('playground-ide', () => {
     assert.include(focusContainer.textContent, keyboardHelp);
 
     // Press Enter to start editing
-    focusContainer.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
+    focusContainer.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await raf();
     assert.isTrue(editableRegion.matches(':focus'));
     assert.notInclude(focusContainer.textContent, keyboardHelp);
 
     // Press Escape to stop editing
     editableRegion.dispatchEvent(
-      new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}),
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
     );
     await raf();
     assert.isTrue(focusContainer.matches(':focus'));
@@ -1019,7 +1019,7 @@ suite('playground-ide', () => {
     },
   );
 
-  test('reloading preview does not create a new iframe element', async () => {
+  test('reloading preview does not create additional iframes', async () => {
     render(
       html`
         <playground-ide sandbox-base-url="/">
@@ -1093,7 +1093,7 @@ suite('playground-ide', () => {
       'playground-tab-bar',
       '.menu-button > svg',
     );
-    menuButtonSvg.dispatchEvent(new Event('click', {bubbles: true}));
+    menuButtonSvg.dispatchEvent(new Event('click', { bubbles: true }));
 
     const deleteButton = await pierce(
       'playground-ide',

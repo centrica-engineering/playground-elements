@@ -4,23 +4,23 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import {html, css, PropertyValues, nothing} from 'lit';
-import {customElement, property, state, query} from 'lit/decorators.js';
+import { html, css, PropertyValues, nothing } from 'lit';
+import { customElement, property, state, query } from 'lit/decorators.js';
 
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/menu/menu.js';
 import '@material/web/menu/menu-item.js';
-import type {Menu} from '@material/web/menu/menu.js';
+import type { Menu } from '@material/web/menu/menu.js';
 
 import './internal/tab-bar.js';
 import './internal/tab.js';
 import './playground-file-system-controls.js';
-import {PlaygroundConnectedElement} from './playground-connected-element.js';
+import { PlaygroundConnectedElement } from './playground-connected-element.js';
 
-import {PlaygroundFileEditor} from './playground-file-editor.js';
-import {PlaygroundFileSystemControls} from './playground-file-system-controls.js';
-import {FilesChangedEvent, PlaygroundProject} from './playground-project.js';
-import {PlaygroundInternalTab} from './internal/tab.js';
+import { PlaygroundFileEditor } from './playground-file-editor.js';
+import { PlaygroundFileSystemControls } from './playground-file-system-controls.js';
+import { FilesChangedEvent, PlaygroundProject } from './playground-project.js';
+import { PlaygroundInternalTab } from './internal/tab.js';
 
 /**
  * A horizontal bar of tabs for switching between playground files, with
@@ -44,6 +44,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     playground-internal-tab {
       color: var(--playground-tab-bar-foreground-color, #000);
       border-right: 4px solid transparent;
+      overflow: hidden;
     }
 
     playground-internal-tab.drop-zone {
@@ -100,7 +101,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
    * Allow the user to add, remove, and rename files in the project's virtual
    * filesystem. Disabled by default.
    */
-  @property({type: Boolean, attribute: 'editable-file-system', reflect: true})
+  @property({ type: Boolean, attribute: 'editable-file-system', reflect: true })
   editableFileSystem = false;
 
   @state()
@@ -158,7 +159,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
   }
 
   private get _visibleFiles() {
-    return (this._project?.files ?? []).filter(({hidden}) => !hidden);
+    return (this._project?.files ?? []).filter(({ hidden }) => !hidden);
   }
 
   override update(changedProperties: PropertyValues) {
@@ -192,31 +193,30 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
         label="File selector"
       >
         ${this._visibleFiles.map(
-          ({name, label}, index) =>
-            html`<playground-internal-tab
+      ({ name, label }, index) =>
+        html`<playground-internal-tab
               .active=${name === this._activeFileName}
               data-filename=${name}
               draggable=${this.editableFileSystem &&
-              index === this._draggableFileIndex &&
-              this._visibleFiles.length > 2}
+          index === this._draggableFileIndex &&
+          this._visibleFiles.length > 2}
               class=${this.editableFileSystem && this._visibleFiles.length > 2
-                ? `${name !== 'index.html' ? 'draggable' : ''} ${
-                    index === this._targetFileIndex ? 'drop-zone' : ''
-                  }`
-                : ''}
+            ? `${name !== 'index.html' ? 'draggable' : ''} ${index === this._targetFileIndex ? 'drop-zone' : ''
+            }`
+            : ''}
               @dragstart=${(event: DragEvent) =>
-                this._originTabDragStart(index, event)}
+            this._originTabDragStart(index, event)}
               @dragend=${() => this._originTabDragEnd()}
               @dragover=${(event: DragEvent) =>
-                this._targetTabDragOver(index, event)}
+            this._targetTabDragOver(index, event)}
               @dragleave=${(event: DragEvent) =>
-                this._targetTabDragLeave(event)}
+            this._targetTabDragLeave(event)}
               @drop=${(event: DragEvent) => this._targetTabDrop(event)}
             >
               ${this.editableFileSystem &&
-              name !== 'index.html' &&
-              this._visibleFiles.length > 2
-                ? html`<md-icon-button
+            name !== 'index.html' &&
+            this._visibleFiles.length > 2
+            ? html`<md-icon-button
                     class="drag-indicator"
                     @mouseover=${() => this._dragIndicatorMouseOver(index)}
                     @mouseout=${() => this._dragIndicatorMouseOut()}
@@ -233,10 +233,10 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
                       />
                     </svg>
                   </md-icon-button>`
-                : nothing}
+            : nothing}
               ${label || name}
               ${this.editableFileSystem
-                ? html`<md-icon-button
+            ? html`<md-icon-button
                     aria-label="File menu"
                     class="menu-button"
                     @click=${(event: Event) => this._onOpenMenu(name, event)}
@@ -253,9 +253,9 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
                       />
                     </svg>
                   </md-icon-button>`
-                : nothing}
+            : nothing}
             </playground-internal-tab>`,
-        )}
+    )}
       </playground-internal-tab-bar>
 
       <md-icon-button aria-label="View tabs" @click=${this._onOpenTabPanel}>
@@ -274,15 +274,15 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
         .anchorElement=${this._tabPanelAnchor}
         .open=${this._tabPanelOpen}
         @closed=${() => {
-          this._tabPanelOpen = false;
-        }}
+        this._tabPanelOpen = false;
+      }}
       >
         ${this._visibleFiles.map(
-          ({name}) =>
-            html`<md-menu-item @click=${() => this._updateActive(name)}
+        ({ name }) =>
+          html`<md-menu-item @click=${() => this._updateActive(name)}
               ><div slot="headline">${name}</div></md-menu-item
             >`,
-        )}
+      )}
       </md-menu>
 
       ${this.editableFileSystem
@@ -433,7 +433,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     event.stopPropagation();
   }
 
-  private _onNewFile(event: CustomEvent<{filename: string}>) {
+  private _onNewFile(event: CustomEvent<{ filename: string }>) {
     this._activeFileName = event.detail.filename;
     // TODO(aomarks) We should focus the editor here. However,
     // CodeMirror.focus() isn't working for some reason.

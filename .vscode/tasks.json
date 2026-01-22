@@ -1,0 +1,338 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run WTR tests",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"web-test-runner",
+				"--config",
+				"web-test-runner.config.js"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run Playwright tests",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"playwright",
+				"test",
+				"--config",
+				"playwright.config.ts"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run Playwright tests (after iframe query fix)",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"playwright",
+				"test",
+				"--config",
+				"playwright.config.ts"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:playwright",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:playwright"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:playwright (after TS fix)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:playwright"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:playwright (after project resolve fix)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:playwright"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:playwright (use preview.iframe)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:playwright"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:playwright (proxy iframe loads)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:playwright"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:playwright (after initial-load polling)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:playwright"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:playwright (contentFrame polling)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:playwright"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Kill stuck test processes",
+			"type": "shell",
+			"command": "pkill",
+			"args": [
+				"-f",
+				"npm test|wireit|web-dev-server|playwright"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "wireit test:playwright (clean run)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:playwright"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:playwright (updated expectations)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:playwright"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:playwright (rerun for full output)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:playwright"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:playwright (detached-safe polling)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:playwright"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:wtr",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:wtr"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:wtr (after nav polling fix)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:wtr"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:wtr (after iframe order tolerance)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:wtr"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Debug WTR playground-ide_test (chromium)",
+			"type": "shell",
+			"command": "WTR_BROWSERS=chromium npx web-test-runner --config web-test-runner.config.js --files test/playground-ide_test.js",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Debug WTR playground-ide_test with logs",
+			"type": "shell",
+			"command": "WTR_BROWSERS=chromium WTR_BROWSER_LOGS=1 npx web-test-runner --config web-test-runner.config.js --files test/playground-ide_test.js",
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run only playground-ide_test (chromium)",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"web-test-runner",
+				"--config",
+				"web-test-runner.config.js",
+				"--files",
+				"test/playground-ide_test.js",
+				"--browsers",
+				"chromium"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:wtr (after assertTabSelected timeout)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:wtr"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:wtr (after faster assertPreviewContains)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:wtr"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:wtr (after timeout bump)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:wtr"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "wireit test:wtr (10min finish timeout)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:wtr"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "build:ts",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build:ts"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "test",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"test"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "test:wtr",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"test:wtr"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}

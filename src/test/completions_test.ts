@@ -7,12 +7,12 @@
 import '../playground-ide.js';
 import '../playground-code-editor.js';
 
-import {assert} from '@esm-bundle/chai';
-import {sendKeys} from '@web/test-runner-commands';
-import {html, ReactiveElement, render} from 'lit';
+import { assert } from '@esm-bundle/chai';
+import { sendKeys } from '@web/test-runner-commands';
+import { html, ReactiveElement, render } from 'lit';
 
-import {PlaygroundCodeEditor} from '../playground-code-editor.js';
-import {PlaygroundProject} from '../playground-project.js';
+import { PlaygroundCodeEditor } from '../playground-code-editor.js';
+import { PlaygroundProject } from '../playground-project.js';
 
 suite('completions', () => {
   let container: HTMLDivElement;
@@ -68,30 +68,42 @@ suite('completions', () => {
     }
   };
 
-  const waitForIframeLoad = (iframe: HTMLElement) =>
-    new Promise<void>((resolve) => {
-      iframe.addEventListener('load', () => resolve(), {once: true});
-    });
-
   const assertPreviewContains = async (text: string) => {
-    const iframe = (await pierce(
-      'playground-ide',
-      'playground-preview',
-      'iframe',
-    )) as HTMLIFrameElement;
-    await waitForIframeLoad(iframe);
-    // TODO(aomarks) Chromium and Webkit both fire iframe "load" after the
-    // contentDocument has actually loaded, but Firefox fires it before. Why is
-    // that? If not for that, we wouldn't need to poll here.
-    await new Promise<void>((resolve) => {
-      const check = () => {
-        if (iframe.contentDocument?.body?.textContent?.includes(text)) {
-          resolve();
-        } else if (testRunning) {
-          setTimeout(check, 10);
+    // With the double-buffered preview iframe implementation, a reload swaps
+    // in a different iframe element. Always check the *currently active* one.
+    await new Promise<void>((resolve, reject) => {
+      const start = performance.now();
+      const timeoutMs = 10_000;
+
+      const check = async () => {
+        if (!testRunning) {
+          return resolve();
         }
+
+        const preview = (await pierce(
+          'playground-ide',
+          'playground-preview',
+        )) as HTMLElement;
+
+        const iframe =
+          (preview.shadowRoot?.querySelector('iframe.active') ??
+            preview.shadowRoot?.querySelector('iframe')) as
+          | HTMLIFrameElement
+          | null;
+
+        const bodyText = iframe?.contentDocument?.body?.textContent ?? '';
+        if (bodyText.includes(text)) {
+          return resolve();
+        }
+        if (performance.now() - start > timeoutMs) {
+          return reject(
+            new Error(`Timed out waiting for preview to contain: ${text}`),
+          );
+        }
+        setTimeout(check, 10);
       };
-      check();
+
+      void check();
     });
   };
 
@@ -119,7 +131,7 @@ suite('completions', () => {
       const focusContainer = editor.shadowRoot.querySelector('#focusContainer');
       if (!focusContainer) return reject();
 
-      const config = {childList: true};
+      const config = { childList: true };
       // To avoid computer/dom specific timing errors in tests, we rely on
       // mutations
       const observer = new MutationObserver(async (mutationsList, obs) => {
@@ -145,14 +157,14 @@ suite('completions', () => {
           node instanceof Element &&
           ((node as Element).matches('.cm-tooltip-autocomplete') ||
             (node as Element).querySelector('.cm-tooltip-autocomplete') !==
-              null),
+            null),
       ),
     );
 
   const openCompletions = async () => {
     // Make completions deterministic across browsers by explicitly opening the
     // tooltip (instead of depending on "activate on typing" timing).
-    await sendKeys({press: 'Control+Space'});
+    await sendKeys({ press: 'Control+Space' });
     await raf();
   };
   const raf = async () => new Promise((r) => requestAnimationFrame(r));
@@ -175,7 +187,7 @@ suite('completions', () => {
         async () => {
           resolve('');
         },
-        {once: true},
+        { once: true },
       );
     });
 
@@ -266,7 +278,7 @@ suite('completions', () => {
     await emulateUser(`function reallySpecificFunctionName() {
             console.log("foo");
         }`);
-    await sendKeys({press: 'Enter'});
+    await sendKeys({ press: 'Enter' });
     await emulateUser('reallySpecifi');
 
     await openCompletions();
