@@ -13,6 +13,7 @@ import {
   Compartment,
   Decoration,
   DecorationSet,
+  drawSelection,
   EditorState,
   EditorView,
   foldGutter,
@@ -822,6 +823,8 @@ export class PlaygroundCodeEditor extends LitElement {
   private _createState(doc: string): EditorState {
     const extensions: Extension[] = [
       history({ newGroupDelay: 0 }),
+      // CM6 cursor and selection are drawn by this extension.
+      drawSelection(),
       keymap.of([
         ...historyKeymap,
         ...completionKeymap,

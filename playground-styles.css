@@ -14,7 +14,7 @@
   font-size: var(--playground-code-font-size, 14px);
   padding: var(--playground-code-padding, 0);
   height: 100%;
-  color: var(--playground-code-default-color, #000);
+  color: var(--playground-code-default-color, inherit);
   background: var(--playground-code-background, #fff);
   direction: ltr;
   isolation: isolate;
@@ -38,7 +38,7 @@
   background: var(
     --playground-code-gutter-background,
     var(--playground-code-background, #fff)
-  );
+  ) !important;
   box-shadow: var(--playground-code-gutter-box-shadow, none);
   white-space: nowrap;
 }
@@ -47,7 +47,7 @@
   padding: 0 3px 0 5px;
   min-width: 20px;
   text-align: right;
-  color: var(--playground-code-linenumber-color, #767676);
+  color: var(--playground-code-linenumber-color, #767676) !important;
   white-space: nowrap;
 }
 
@@ -58,7 +58,7 @@
     var(
       --playground-code-cursor-color,
       var(--playground-code-default-color, #000)
-    );
+    ) !important;
 }
 
 @keyframes blink {

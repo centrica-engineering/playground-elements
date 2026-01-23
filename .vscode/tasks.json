@@ -314,6 +314,50 @@
 			"problemMatcher": []
 		},
 		{
+			"label": "build:ts (verify instant scroll patch)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build:ts"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build (verify jitter fix)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build:ts"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build:ts (verify restore scheduling)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build:ts"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "build:ts (verify no-jump URL scroll)",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"build:ts"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
 			"label": "test",
 			"type": "shell",
 			"command": "npm",

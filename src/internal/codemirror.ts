@@ -16,6 +16,7 @@ export {
   Decoration,
   WidgetType,
   lineNumbers,
+  drawSelection,
   type DecorationSet,
 } from '@codemirror/view';
 export {
@@ -29,11 +30,11 @@ export {
   redoDepth,
   toggleComment,
 } from '@codemirror/commands';
-export {foldGutter, foldKeymap} from '@codemirror/language';
+export { foldGutter, foldKeymap } from '@codemirror/language';
 export {
   autocompletion,
   completionKeymap,
   startCompletion,
 } from '@codemirror/autocomplete';
-export {HighlightStyle, syntaxHighlighting} from '@codemirror/language';
-export {tags} from '@lezer/highlight';
+export { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+export { tags } from '@lezer/highlight';

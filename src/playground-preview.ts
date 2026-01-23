@@ -502,6 +502,21 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
     if (!iframe) {
       return;
     }
+
+    // If we have a target line for the HTML file, include it in the iframe URL
+    // so the preview can scroll before the load event (avoids a visible
+    // top-then-jump effect).
+    let url = this._indexUrl;
+    const target = this._pendingScrollTarget;
+    if (url && typeof target?.lineNumber === 'number') {
+      try {
+        const u = new URL(url);
+        u.searchParams.set('playground-scroll-line', String(target.lineNumber));
+        url = u.toString();
+      } catch {
+        // Ignore invalid URL.
+      }
+    }
     // Reloading the iframe can cause a history entry to be added to the parent
     // window (on Chrome but not Firefox, and only when the parent/iframe origins
     // are different). Removing the iframe from the DOM while we initiate the
@@ -513,7 +528,7 @@ export class PlaygroundPreview extends PlaygroundConnectedElement {
     // Note we can't use contentWindow.location.reload() here, because the
     // IFrame might be on a different origin.
     iframe.src = '';
-    iframe.src = this._indexUrl;
+    iframe.src = url;
     if (parentNode) {
       parentNode.insertBefore(iframe, nextSibling);
     }

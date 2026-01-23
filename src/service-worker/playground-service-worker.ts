@@ -167,7 +167,79 @@ const getFile = async (_e: FetchEvent, path: string, sessionId: SessionID) => {
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   } catch {}
 
+  // Ensure our programmatic scroll actions don't animate due to page CSS like
+  // scroll-behavior: smooth or other inherited styles.
+  const withInstantScroll = (fn) => {
+    const html = document.documentElement;
+    const body = document.body;
+
+    const prevHtmlInline = html?.style?.scrollBehavior;
+    const prevBodyInline = body?.style?.scrollBehavior;
+
+    let styleEl = null;
+    try {
+      styleEl = document.createElement('style');
+      styleEl.setAttribute('data-playground-instant-scroll', '');
+      // scroll-behavior is not inherited, so unset behaves like auto.
+      // Using * avoids missing custom scroll containers.
+      styleEl.textContent = '* { scroll-behavior: unset !important; }';
+      (document.head || document.documentElement).appendChild(styleEl);
+    } catch {}
+
+    try {
+      if (html?.style) html.style.scrollBehavior = 'unset';
+      if (body?.style) body.style.scrollBehavior = 'unset';
+    } catch {}
+
+    try {
+      fn();
+    } finally {
+      // Keep the override briefly since restore runs multiple attempts.
+      setTimeout(() => {
+        try {
+          if (html?.style) html.style.scrollBehavior = prevHtmlInline || '';
+          if (body?.style) body.style.scrollBehavior = prevBodyInline || '';
+        } catch {}
+        try {
+          styleEl?.remove?.();
+        } catch {}
+      }, 0);
+    }
+  };
+
   const key = ${JSON.stringify(storageKey)};
+
+  // If we receive a "scroll to edited HTML" target, prefer that over restoring
+  // the previous scroll position to avoid a visible double-jump.
+  let receivedScrollTarget = false;
+
+  let programmaticScrollUntil = 0;
+  const startProgrammaticScroll = (ms = 600) => {
+    const until = Date.now() + ms;
+    if (until > programmaticScrollUntil) programmaticScrollUntil = until;
+  };
+  const isProgrammaticScroll = () => Date.now() < programmaticScrollUntil;
+
+  let restoreScheduled = false;
+  const scheduleRestore = () => {
+    if (restoreScheduled) return;
+    restoreScheduled = true;
+
+    const run = () => {
+      restoreScheduled = false;
+      if (receivedScrollTarget) return;
+      restore();
+    };
+
+    // Wait until after the page is loaded, and also allow a short grace period
+    // for the parent to send a scroll-target message.
+    const delayMs = 0;
+    if (document.readyState !== 'complete') {
+      window.addEventListener('load', () => setTimeout(run, delayMs), {once: true});
+    } else {
+      setTimeout(run, delayMs);
+    }
+  };
 
   const postToParent = (message) => {
     try {
@@ -194,6 +266,9 @@ const getFile = async (_e: FetchEvent, path: string, sessionId: SessionID) => {
   // continuously on scroll (throttled).
   let saveScheduled = false;
   const onScroll = () => {
+    // Avoid feedback loops / jitter when we're programmatically restoring or
+    // jumping to an element.
+    if (isProgrammaticScroll()) return;
     if (saveScheduled) return;
     saveScheduled = true;
     requestAnimationFrame(() => {
@@ -221,17 +296,34 @@ const getFile = async (_e: FetchEvent, path: string, sessionId: SessionID) => {
     const x = typeof data?.x === 'number' ? data.x : 0;
     const y = typeof data?.y === 'number' ? data.y : 0;
 
-    const attempt = () => {
+    const nearTarget = () => {
       try {
-        window.scrollTo(x, y);
-      } catch {}
+        return Math.abs((window.scrollX || 0) - x) <= 2 && Math.abs((window.scrollY || 0) - y) <= 2;
+      } catch {
+        return false;
+      }
     };
 
-    // Restore multiple times to handle late layout changes.
+    const attempt = () => {
+      withInstantScroll(() => {
+        try {
+          window.scrollTo({left: x, top: y, behavior: 'auto'});
+        } catch {
+          try {
+            window.scrollTo(x, y);
+          } catch {}
+        }
+      });
+    };
+
+    // Don't fight the page forever; do a small number of attempts to reduce
+    // visible jumping when the page is still laying out.
+    if (nearTarget()) return;
+    startProgrammaticScroll(0);
     attempt();
-    requestAnimationFrame(attempt);
-    setTimeout(attempt, 50);
-    setTimeout(attempt, 250);
+    requestAnimationFrame(() => {
+      if (!nearTarget()) attempt();
+    });
   };
 
   // Parent-driven restore path (works even if storage is blocked).
@@ -239,24 +331,101 @@ const getFile = async (_e: FetchEvent, path: string, sessionId: SessionID) => {
     const data = event?.data;
     if (!data || data.type !== 'playground-preview-scroll-restore') return;
     if (data.key !== key) return;
+    if (receivedScrollTarget) return;
     const x = typeof data.x === 'number' ? data.x : 0;
     const y = typeof data.y === 'number' ? data.y : 0;
-    try {
-      window.scrollTo(x, y);
-    } catch {}
+    startProgrammaticScroll(0);
+    withInstantScroll(() => {
+      try {
+        window.scrollTo({left: x, top: y, behavior: 'auto'});
+      } catch {
+        try {
+          window.scrollTo(x, y);
+        } catch {}
+      }
+    });
   });
+
+  const isElementAlreadyVisible = (el) => {
+    try {
+      const rect = el.getBoundingClientRect();
+      const viewportH = window.innerHeight || document.documentElement?.clientHeight || 0;
+      if (!viewportH) return false;
+      // If fully visible, don't scroll.
+      if (rect.top >= 0 && rect.bottom <= viewportH) return true;
+      // If roughly centered already, don't scroll.
+      const mid = rect.top + rect.height / 2;
+      return mid >= viewportH * 0.33 && mid <= viewportH * 0.66;
+    } catch {
+      return false;
+    }
+  };
+
+  const scrollToLine = (lineNumber) => {
+    if (typeof lineNumber !== 'number') return;
+    if (!Number.isFinite(lineNumber)) return;
+
+    const elements = document.querySelectorAll('[data-playground-line]');
+    let bestBefore = null;
+    let bestBeforeLine = -1;
+    let bestAfter = null;
+    let bestAfterLine = Infinity;
+    for (const el of elements) {
+      const raw = el.getAttribute('data-playground-line');
+      const l = raw ? Number(raw) : NaN;
+      if (!Number.isFinite(l)) continue;
+      if (l <= lineNumber && l > bestBeforeLine) {
+        bestBeforeLine = l;
+        bestBefore = el;
+      } else if (l > lineNumber && l < bestAfterLine) {
+        bestAfterLine = l;
+        bestAfter = el;
+      }
+    }
+    const chosen = bestBefore ?? bestAfter;
+    if (chosen) {
+      scrollToElement(chosen);
+    }
+  };
+
+  // URL-driven "scroll to edited HTML" path. Used to avoid a visible
+  // jump-to-top before the parent can postMessage the target.
+  try {
+    const url = new URL(location.href);
+    const raw = url.searchParams.get('playground-scroll-line');
+    const lineFromUrl = raw ? Number(raw) : NaN;
+    if (Number.isFinite(lineFromUrl)) {
+      receivedScrollTarget = true;
+      const run = () => scrollToLine(lineFromUrl);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', run, {once: true});
+      } else {
+        run();
+      }
+
+      // Remove param to avoid interfering with app routing.
+      url.searchParams.delete('playground-scroll-line');
+      history.replaceState(null, '', url.toString());
+    }
+  } catch {}
 
   const scrollToElement = (el) => {
     if (!el || typeof el.scrollIntoView !== 'function') return;
     const attempt = () => {
-      try {
-        el.scrollIntoView({block: 'center', inline: 'nearest'});
-      } catch {}
+      if (isElementAlreadyVisible(el)) return;
+      withInstantScroll(() => {
+        try {
+          el.scrollIntoView({block: 'center', inline: 'nearest', behavior: 'auto'});
+        } catch {
+          try {
+            el.scrollIntoView({block: 'center', inline: 'nearest'});
+          } catch {}
+        }
+      });
     };
+    startProgrammaticScroll(0);
     attempt();
     requestAnimationFrame(attempt);
-    setTimeout(attempt, 50);
-    setTimeout(attempt, 250);
   };
 
   // Parent-driven "scroll to edited HTML" path.
@@ -264,31 +433,13 @@ const getFile = async (_e: FetchEvent, path: string, sessionId: SessionID) => {
     const data = event?.data;
     if (!data || data.type !== 'playground-preview-scroll-target') return;
 
+    receivedScrollTarget = true;
+
     const lineNumber =
       typeof data.lineNumber === 'number' ? data.lineNumber : undefined;
     if (lineNumber !== undefined) {
-      const elements = document.querySelectorAll('[data-playground-line]');
-      let bestBefore = null;
-      let bestBeforeLine = -1;
-      let bestAfter = null;
-      let bestAfterLine = Infinity;
-      for (const el of elements) {
-        const raw = el.getAttribute('data-playground-line');
-        const l = raw ? Number(raw) : NaN;
-        if (!Number.isFinite(l)) continue;
-        if (l <= lineNumber && l > bestBeforeLine) {
-          bestBeforeLine = l;
-          bestBefore = el;
-        } else if (l > lineNumber && l < bestAfterLine) {
-          bestAfterLine = l;
-          bestAfter = el;
-        }
-      }
-      const chosen = bestBefore ?? bestAfter;
-      if (chosen) {
-        scrollToElement(chosen);
-        return;
-      }
+      scrollToLine(lineNumber);
+      return;
     }
 
     const htmlTarget = data.htmlTarget;
@@ -324,11 +475,7 @@ const getFile = async (_e: FetchEvent, path: string, sessionId: SessionID) => {
   window.addEventListener('beforeunload', save, {capture: true});
   window.addEventListener('pagehide', save, {capture: true});
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', restore, {once: true});
-  } else {
-    restore();
-  }
+  scheduleRestore();
 
   // Ask the parent for the latest scroll position it observed.
   postToParent({type: 'playground-preview-scroll-request', key});
