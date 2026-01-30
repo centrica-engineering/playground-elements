@@ -70,9 +70,10 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
       padding-left: 0 !important;
     }
 
-    :host([editable-file-system])
+    :host([editable-file-system]) {
       playground-internal-tab:not([data-filename='index.html'])::part(button) {
-      padding-right: 0 !important;
+        padding: 0 0 0 24px;
+      }
     }
 
     .drag-indicator {
@@ -226,7 +227,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
                       viewBox="0 0 24 24"
                       width="16"
                       height="16"
-                      fill="currentcolor"
+                      fill="rgba(0,0,0,.1)"
                     >
                       <path
                         d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"
@@ -235,7 +236,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
                   </md-icon-button>`
             : nothing}
               ${label || name}
-              ${this.editableFileSystem
+              ${this.editableFileSystem && name !== 'index.html'
             ? html`<md-icon-button
                     aria-label="File menu"
                     class="menu-button"
