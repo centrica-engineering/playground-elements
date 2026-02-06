@@ -618,20 +618,22 @@ suite('playground-ide', () => {
     ) as HTMLElement;
     const keyboardHelp = 'Press Enter';
 
-    // Not focused initially
-    assert.notInclude(focusContainer.textContent, keyboardHelp);
+    const keyboardHelpEl = editor.shadowRoot!.querySelector(
+      '#keyboardHelp',
+    ) as HTMLElement;
+    assert.ok(keyboardHelpEl);
+    assert.equal(focusContainer.getAttribute('aria-describedby'), 'keyboardHelp');
+    assert.include(keyboardHelpEl.textContent, keyboardHelp);
 
-    // When the inner container is focused, show the keyboard prompt
+    // Focus the outer container.
     focusContainer.focus();
     await raf();
     assert.isTrue(focusContainer.matches(':focus'));
-    assert.include(focusContainer.textContent, keyboardHelp);
 
     // Press Enter to start editing
     focusContainer.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await raf();
     assert.isTrue(editableRegion.matches(':focus'));
-    assert.notInclude(focusContainer.textContent, keyboardHelp);
 
     // Press Escape to stop editing
     editableRegion.dispatchEvent(
@@ -639,14 +641,12 @@ suite('playground-ide', () => {
     );
     await raf();
     assert.isTrue(focusContainer.matches(':focus'));
-    assert.include(focusContainer.textContent, keyboardHelp);
 
     // Focus something else entirely
     focusContainer.blur();
     await raf();
     assert.isFalse(focusContainer.matches(':focus'));
     assert.isFalse(editableRegion.matches(':focus'));
-    assert.notInclude(focusContainer.textContent, keyboardHelp);
   });
 
   test('ignores query params when serving files', async () => {
@@ -1074,6 +1074,11 @@ suite('playground-ide', () => {
               <p>Hello HTML</p>
             </body>
           </script>
+          <script type="sample/html" filename="foo.html">
+            <body>
+              <p>Foo HTML</p>
+            </body>
+          </script>
         </playground-ide>
       `,
       container,
@@ -1084,7 +1089,7 @@ suite('playground-ide', () => {
       'playground-ide',
       'playground-project',
     )) as PlaygroundProject;
-    assert.lengthOf(project.files ?? [], 1);
+    assert.lengthOf(project.files ?? [], 2);
 
     // Historically, clicking the tab bar icon button
     // the target changed from the element to its internal svg.
@@ -1103,7 +1108,8 @@ suite('playground-ide', () => {
     );
     deleteButton.click();
 
-    assert.lengthOf(project.files ?? [], 0);
+    assert.lengthOf(project.files ?? [], 1);
+    assert.equal(project.files?.[0].name, 'index.html');
   });
 
   test('uses custom htmlFile property', async () => {
@@ -1351,7 +1357,7 @@ suite('playground-ide', () => {
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
+        codemirror?.shadowRoot?.querySelector<HTMLElement>('.cm-content'),
       ),
       EXPECTED_FOLDED,
     );
@@ -1359,7 +1365,7 @@ suite('playground-ide', () => {
     await raf();
     assert.include(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
+        codemirror?.shadowRoot?.querySelector<HTMLElement>('.cm-content'),
       ),
       `src="hello.js"></script>`,
     );
@@ -1367,7 +1373,7 @@ suite('playground-ide', () => {
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
+        codemirror?.shadowRoot?.querySelector<HTMLElement>('.cm-content'),
       ),
       EXPECTED_FOLDED,
     );
@@ -1408,7 +1414,7 @@ suite('playground-ide', () => {
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
+        codemirror?.shadowRoot?.querySelector<HTMLElement>('.cm-content'),
       ),
       EXPECTED_FOLDED,
     );
@@ -1416,7 +1422,7 @@ suite('playground-ide', () => {
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
+        codemirror?.shadowRoot?.querySelector<HTMLElement>('.cm-content'),
       ),
       '<body>…</body>',
     );
@@ -1424,7 +1430,7 @@ suite('playground-ide', () => {
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
+        codemirror?.shadowRoot?.querySelector<HTMLElement>('.cm-content'),
       ),
       EXPECTED_FOLDED,
     );
@@ -1459,7 +1465,7 @@ suite('playground-ide', () => {
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
+        codemirror?.shadowRoot?.querySelector<HTMLElement>('.cm-content'),
       ),
       EXPECTED_FOLDED,
     );
@@ -1471,7 +1477,7 @@ console.log('tomato');`;
     await raf();
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
+        codemirror?.shadowRoot?.querySelector<HTMLElement>('.cm-content'),
       ),
       "…console.log('tomato');",
     );
@@ -1481,7 +1487,7 @@ console.log('tomato');`;
 
     assert.equal(
       innerTextWithoutSpaces(
-        codemirror?.shadowRoot?.querySelector<HTMLDivElement>('*'),
+        codemirror?.shadowRoot?.querySelector<HTMLElement>('.cm-content'),
       ),
       EXPECTED_FOLDED,
     );

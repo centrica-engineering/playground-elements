@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { LitElement, css, html, nothing, PropertyValues } from 'lit';
+import { LitElement, css, html, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import {
@@ -33,7 +33,6 @@ import {
   WidgetType,
 } from './internal/codemirror.js';
 import playgroundStyles from './playground-styles.js';
-import './internal/overlay.js';
 import { Diagnostic } from 'vscode-languageserver-protocol';
 import {
   EditorCompletion,
@@ -115,6 +114,9 @@ const codeMirrorTheme = EditorView.theme({
   '&': {
     height: '100%',
     borderRadius: 'inherit',
+  },
+  '&.cm-focused': {
+    outline: 'none',
   },
   '.cm-scroller': {
     fontFamily: 'var(--playground-code-font-family, monospace)',
@@ -391,6 +393,16 @@ export class PlaygroundCodeEditor extends LitElement {
         outline: none;
       }
 
+      #focusContainer:focus-visible,
+      #focusContainer:focus-within:focus-visible {
+        outline: 2px solid
+          var(
+            --playground-focus-outline-color,
+            var(--playground-highlight-color, #6200ee)
+          );
+        outline-offset: 2px;
+      }
+
       .cm-foldmarker {
         font-family: sans-serif;
       }
@@ -406,9 +418,15 @@ export class PlaygroundCodeEditor extends LitElement {
       }
 
       #keyboardHelp {
-        font-size: 18px;
-        font-family: sans-serif;
-        padding: 10px 20px;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
 
       .diagnostic {
@@ -582,9 +600,6 @@ export class PlaygroundCodeEditor extends LitElement {
     position: string;
   };
 
-  @state()
-  private _showKeyboardHelp = false;
-
   @query('#focusContainer')
   private _focusContainer?: HTMLDivElement;
 
@@ -674,19 +689,13 @@ export class PlaygroundCodeEditor extends LitElement {
       <div
         id="focusContainer"
         tabindex="0"
+        aria-describedby="keyboardHelp"
         @mousedown=${this._onMousedown}
-        @focus=${this._onFocus}
-        @blur=${this._onBlur}
         @keydown=${this._onKeyDown}
       >
-        ${this._showKeyboardHelp
-        ? html`<playground-internal-overlay>
-              <p id="keyboardHelp" part="dialog">
-                Press <strong>Enter</strong> to start editing<br />
-                Press <strong>Escape</strong> to exit editor
-              </p>
-            </playground-internal-overlay>`
-        : nothing}
+        <span id="keyboardHelp">
+          Press Enter to start editing. Press Escape to exit editor.
+        </span>
         ${this._cmDom}
         <div
           id="tooltip"
@@ -750,18 +759,6 @@ export class PlaygroundCodeEditor extends LitElement {
 
   private _onMousedown() {
     this._view?.focus();
-  }
-
-  private _onFocus() {
-    // Outer container was focused, either by tabbing from outside, or by
-    // pressing Escape.
-    this._showKeyboardHelp = true;
-  }
-
-  private _onBlur() {
-    // Outer container was unfocused, either by tabbing away from it, or by
-    // pressing Enter.
-    this._showKeyboardHelp = false;
   }
 
   private _onKeyDown(event: KeyboardEvent) {

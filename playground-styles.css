@@ -34,7 +34,7 @@
 /* GUTTER */
 
 .cm-gutters {
-  border-right: var(--playground-code-gutter-border-right, none);
+  border-right: var(--playground-code-gutter-border-right, none) !important;
   background: var(
     --playground-code-gutter-background,
     var(--playground-code-background, #fff)

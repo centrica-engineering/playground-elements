@@ -48,7 +48,7 @@ export class PlaygroundTabBar extends PlaygroundConnectedElement {
     }
 
     playground-internal-tab.drop-zone {
-      border-right: 4px solid #6200ee;
+      border-right: 4px solid var(--playground-primary-color,#6200ee);
     }
 
     playground-internal-tab[active] {
