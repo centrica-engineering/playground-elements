@@ -9,12 +9,14 @@ import ts from '../internal/typescript.js';
 const compilerOptions = {
   target: ts.ScriptTarget.ES2021,
   module: ts.ModuleKind.ESNext,
+  moduleDetection: ts.ModuleDetectionKind.Legacy,
   experimentalDecorators: true,
   skipDefaultLibCheck: true,
   skipLibCheck: true,
   allowJs: true,
   moduleResolution: ts.ModuleResolutionKind.NodeNext,
   jsx: ts.JsxEmit.React,
+  newLine: ts.NewLineKind.LineFeed,
   lib: ['dom', 'esnext'],
 };
 
@@ -31,12 +33,12 @@ export class LanguageServiceContext {
 
   readonly serviceHost = new WorkerLanguageServiceHost(
     self.origin,
-    compilerOptions
+    compilerOptions,
   );
 
   readonly service = ts.createLanguageService(
     this.serviceHost,
-    ts.createDocumentRegistry()
+    ts.createDocumentRegistry(),
   );
 }
 
@@ -82,7 +84,7 @@ class WorkerLanguageServiceHost implements ts.LanguageServiceHost {
    * */
   sync(files: Map<string, string>) {
     files.forEach((file, fileName) =>
-      this.updateFileContentIfNeeded(fileName, file)
+      this.updateFileContentIfNeeded(fileName, file),
     );
     this._removeDeletedFiles(files);
   }

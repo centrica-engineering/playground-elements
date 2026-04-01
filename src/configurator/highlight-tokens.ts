@@ -15,7 +15,7 @@ export const tokens = [
     id: 'synDefault',
     label: 'Default',
     cssProperty: '--playground-code-default-color',
-    cmClass: '.CodeMirror-line [role="presentation"]',
+    cmClass: '.cm-line',
     defaultValue: '#000000',
   },
   {

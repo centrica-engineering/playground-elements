@@ -1,6 +1,7 @@
 *.html
 /_codemirror/
 /.wireit
+/test-results/
 /*.d.ts
 /*.js
 /configurator/
@@ -9,9 +10,9 @@
 /internal/
 /service-worker/
 /shared/
-/src/configurator/themes.ts
 /src/playground-styles.ts
-/src/themes/
+/src/themes/*
+!/src/themes/dark.css.ts
 /test/
 /themes/
 /typescript-worker/

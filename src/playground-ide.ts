@@ -19,9 +19,9 @@ import {serviceWorkerHash} from './shared/version.js';
  * A multi-file code editor component with live preview that works without a
  * server.
  *
- * <playground-ide> loads a project configuration file and the set of source
+ * &lt;playground-ide&gt; loads a project configuration file and the set of source
  * files it describes from the network. The source files can be edited locally.
- * To serve the locally edited files to the live preview, <playground-ide>
+ * To serve the locally edited files to the live preview, &lt;playground-ide&gt;
  * registers a service worker to serve files to the preview from the main UI
  * thread directly, without a network roundtrip.
  *
@@ -39,14 +39,14 @@ import {serviceWorkerHash} from './shared/version.js';
  * }
  * ```
  *
- * Files can also be given as <script> tag children of <playground-ide>. The
+ * Files can also be given as &lt;script&gt; tag children of &lt;playground-ide&gt;. The
  * type attribute must start with "sample/" and then the type of the file, one
  * of: "js", "ts", "html", or "css". The <script> must also have a "filename"
  * attribute.
  *
  * Example inline files:
  * ```html
- * <playground-ide>
+ * &lt;playground-ide&gt;
  *   <script type="sample/html" filename="index.html">
  *     <script type="module" src="index.js">&lt;script>
  *     <h1>Hello World</h1>
@@ -54,7 +54,7 @@ import {serviceWorkerHash} from './shared/version.js';
  *   <script type="sample/js" filename="index.js">
  *     document.body.append('<h2>Hello from JS</h2>');
  *   </script>
- * </playground>
+ * &lt;/playground&gt;
  * ```
  */
 @customElement('playground-ide')
@@ -76,6 +76,7 @@ export class PlaygroundIde extends LitElement {
       flex-direction: column;
       height: 100%;
       flex: 1;
+      min-height: 0;
       min-width: 100px;
       border-radius: inherit;
       border-top-right-radius: 0;
@@ -89,7 +90,7 @@ export class PlaygroundIde extends LitElement {
 
     playground-file-editor {
       flex: 1;
-      height: calc(100% - var(--playground-bar-height, 40px));
+      min-height: 0;
     }
 
     #rhs {
@@ -145,9 +146,10 @@ export class PlaygroundIde extends LitElement {
   @property({attribute: 'project-src', hasChanged: () => false})
   get projectSrc(): string | undefined {
     // To minimize synchronization complexity, we delegate the `projectSrc` and
-    // `files` getters/setters directly to our <playground-project>. The only
+    // `files` getters/setters directly to our `playground-project` element. The
+    // only
     // case we need to handle is properties set before upgrade or before we
-    // first render the <playground-project>.
+    // first render the `playground-project` element.
     //
     // Note we set `hasChanged: () => false` because we don't need to trigger
     // `update` when this property changes. (Why be a lit property at all?
@@ -381,7 +383,7 @@ export class PlaygroundIde extends LitElement {
     const onPointermove = (event: PointerEvent) => {
       const rhsWidth = Math.min(
         rhsMaxWidth,
-        Math.max(rhsMinWidth, hostRight - event.clientX)
+        Math.max(rhsMinWidth, hostRight - event.clientX),
       );
       const percent = (rhsWidth / hostWidth) * 100;
       rhsStyle.setProperty('--playground-preview-width', `${percent}%`);
