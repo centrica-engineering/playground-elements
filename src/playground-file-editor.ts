@@ -4,19 +4,19 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import {html, css, PropertyValues} from 'lit';
-import {customElement, property, query} from 'lit/decorators.js';
-import {live} from 'lit/directives/live.js';
+import { html, css, PropertyValues } from 'lit';
+import { customElement, property, query } from 'lit/decorators.js';
+import { live } from 'lit/directives/live.js';
 
 import './playground-code-editor.js';
-import {PlaygroundConnectedElement} from './playground-connected-element.js';
+import { PlaygroundConnectedElement } from './playground-connected-element.js';
 
-import {PlaygroundProject} from './playground-project.js';
-import {PlaygroundCodeEditor} from './playground-code-editor.js';
-import {CodeEditorChangeData} from './shared/worker-api.js';
+import { PlaygroundProject } from './playground-project.js';
+import { PlaygroundCodeEditor } from './playground-code-editor.js';
+import { CodeEditorChangeData } from './shared/worker-api.js';
 
 /**
- * A text editor associated with a <playground-project>.
+ * A text editor associated with a &lt;playground-project&gt;.
  */
 @customElement('playground-file-editor')
 export class PlaygroundFileEditor extends PlaygroundConnectedElement {
@@ -26,7 +26,8 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
       /* Prevents scrollbars from changing container size and shifting layout
       slightly. */
       box-sizing: border-box;
-      height: 350px;
+      height: 100%;
+      min-height: 0;
     }
 
     slot {
@@ -37,6 +38,7 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
 
     playground-code-editor {
       height: 100%;
+      min-height: 0;
       border-radius: inherit;
       border-top-left-radius: 0;
       border-top-right-radius: 0;
@@ -56,13 +58,13 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
    * If true, display a left-hand-side gutter with line numbers. Default false
    * (hidden).
    */
-  @property({type: Boolean, attribute: 'line-numbers'})
+  @property({ type: Boolean, attribute: 'line-numbers' })
   lineNumbers = false;
 
   /**
    * If true, wrap for long lines. Default false
    */
-  @property({type: Boolean, attribute: 'line-wrapping'})
+  @property({ type: Boolean, attribute: 'line-wrapping' })
   lineWrapping = false;
 
   /**
@@ -83,13 +85,13 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
   /**
    * If true, this editor is not editable.
    */
-  @property({type: Boolean, reflect: true})
+  @property({ type: Boolean, reflect: true })
   readonly = false;
 
   /**
    * If true, will disable code completions in the code-editor.
    */
-  @property({type: Boolean, attribute: 'no-completions'})
+  @property({ type: Boolean, attribute: 'no-completions' })
   noCompletions = false;
 
   private get _files() {
@@ -108,23 +110,23 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
       if (oldProject) {
         oldProject.removeEventListener(
           'filesChanged',
-          this._onProjectFilesChanged
+          this._onProjectFilesChanged,
         );
         oldProject.removeEventListener('compileDone', this._onCompileDone);
         oldProject.removeEventListener(
           'diagnosticsChanged',
-          this._onDiagnosticsChanged
+          this._onDiagnosticsChanged,
         );
       }
       if (this._project) {
         this._project.addEventListener(
           'filesChanged',
-          this._onProjectFilesChanged
+          this._onProjectFilesChanged,
         );
         this._project.addEventListener('compileDone', this._onCompileDone);
         this._project.addEventListener(
           'diagnosticsChanged',
-          this._onDiagnosticsChanged
+          this._onDiagnosticsChanged,
         );
       }
       this._onProjectFilesChanged();
@@ -139,23 +141,24 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
             <playground-code-editor
               exportparts="diagnostic-tooltip, dialog"
               .value=${
-                // We need live() because the lit's dirty-checking value for
-                // content is not updated by user edits.
-                live(this._currentFile?.content ?? '')
-              }
+          // We need live() because the lit's dirty-checking value for
+          // content is not updated by user edits.
+          live(this._currentFile?.content ?? '')
+          }
               .documentKey=${this._currentFile}
               .type=${this._currentFile
-                ? mimeTypeToTypeEnum(this._currentFile.contentType)
-                : undefined}
+            ? mimeTypeToTypeEnum(this._currentFile.contentType)
+            : undefined}
               .lineNumbers=${this.lineNumbers}
               .lineWrapping=${this.lineWrapping}
               .readonly=${this.readonly || !this._currentFile}
               .pragmas=${this.pragmas}
               .diagnostics=${this._project?.diagnostics?.get(
-                this._currentFile?.name ?? ''
-              )}
+              this._currentFile?.name ?? '',
+            )}
               .noCompletions=${this.noCompletions}
               @change=${this._onEdit}
+              @cursor-position-changed=${this._onCursorPositionChanged}
               @request-completions=${this._onRequestCompletions}
             >
             </playground-code-editor>
@@ -190,12 +193,24 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
     this._project.editFile(this._currentFile, this._editor.value);
   }
 
+  private _onCursorPositionChanged(e: CustomEvent) {
+    if (!this._project || !this.filename) return;
+    if (e.detail?.docChanged !== true) return;
+    this._project.dispatchEvent(
+      new CustomEvent('preview-scroll-target', {
+        detail: {
+          fileName: this.filename,
+          ...e.detail,
+        },
+      }),
+    );
+  }
+
   private async _onRequestCompletions(e: CustomEvent) {
     const codeEditorChangeData = e.detail as CodeEditorChangeData;
     codeEditorChangeData.fileName = this.filename ?? '';
-    const completions = await this._project?.getCompletions(
-      codeEditorChangeData
-    );
+    const completions =
+      await this._project?.getCompletions(codeEditorChangeData);
     if (completions) {
       codeEditorChangeData.provideCompletions(completions);
     }

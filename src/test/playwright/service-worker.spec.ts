@@ -4,14 +4,14 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import {test, expect} from '@playwright/test';
-import {startDevServer} from '@web/dev-server';
-import {readFile} from 'fs/promises';
+import { test, expect } from '@playwright/test';
+import { startDevServer } from '@web/dev-server';
+import { readFile } from 'fs/promises';
 // eslint-disable-next-line import/extensions
-import {Deferred} from '../../shared/deferred.js';
+import { Deferred } from '../../shared/deferred.js';
 
-import type {Page} from 'playwright';
-import type {DevServer, Plugin} from '@web/dev-server-core';
+import type { Page } from 'playwright';
+import type { DevServer, Plugin } from '@web/dev-server-core';
 
 const indexHtml = `
 <!DOCTYPE html>
@@ -87,7 +87,7 @@ test.describe('service worker', () => {
     if (versionMatches.length !== 1) {
       throw new Error(
         'Expected 1 version string in playground-service-worker.js. ' +
-          `Found ${versionMatches.length}.`
+        `Found ${versionMatches.length}.`,
       );
     }
     const hex = versionMatches[0].groups?.['hex'];
@@ -122,7 +122,7 @@ test.describe('service worker', () => {
         } else {
           body = body.replace(originalSwVersion, expectedVersion);
         }
-        return {body};
+        return { body };
       },
 
       transformCacheKey() {
@@ -154,25 +154,37 @@ test.describe('service worker', () => {
     await server.stop();
   });
 
-  const getIframeBodyText = async (page: Page): Promise<string> => {
-    const iframe = await page.waitForSelector('playground-preview iframe');
-    const contentFrame = await iframe.contentFrame();
-    if (contentFrame === null) {
-      throw new Error('iframe had null contentFrame');
+  const getPreviewIframeBodyTexts = async (page: Page): Promise<string[]> => {
+    const iframes = await page.$$('playground-preview iframe');
+    const texts: string[] = [];
+    for (const iframe of iframes) {
+      try {
+        const frame = await iframe.contentFrame();
+        if (!frame) continue;
+        const bodyText = await frame.textContent('body');
+        texts.push((bodyText ?? '').trim());
+      } catch {
+        // The preview uses iframe swapping to reduce white flash. During a
+        // poll iteration, a frame can be replaced/detached; ignore and retry.
+      }
     }
-    const bodyText = await contentFrame.textContent('body');
-    if (bodyText === null) {
-      throw new Error('contentFrame had null body text');
-    }
-    return bodyText;
+    return texts;
   };
 
   const expectIframeServesVersion = async (
     page: Page,
-    version: string
+    version: string,
   ): Promise<void> => {
-    const text = await getIframeBodyText(page);
-    expect(text).toEqual(`${version} index.html`);
+    const expected = `${version} index.html`;
+    await expect
+      .poll(
+        async () => {
+          const texts = await getPreviewIframeBodyTexts(page);
+          return texts.some((t) => t.startsWith(expected));
+        },
+        { timeout: 5000 },
+      )
+      .toBe(true);
   };
 
   const clickReloadButton = async (page: Page): Promise<void> => {
@@ -186,10 +198,10 @@ test.describe('service worker', () => {
         if (text === expect) {
           resolve();
         }
-      })
+      }),
     );
 
-  test('simple fresh load', async ({browser}) => {
+  test('simple fresh load', async ({ browser }) => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
 
@@ -198,7 +210,7 @@ test.describe('service worker', () => {
     await expectIframeServesVersion(page, 'new');
   });
 
-  test('updates after tab reload', async ({browser}) => {
+  test('updates after tab reload', async ({ browser }) => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
 
@@ -211,7 +223,7 @@ test.describe('service worker', () => {
     await expectIframeServesVersion(page, 'new');
   });
 
-  test('two tabs at same version', async ({browser}) => {
+  test('two tabs at same version', async ({ browser }) => {
     const ctx = await browser.newContext();
     const page1 = await ctx.newPage();
     const page2 = await ctx.newPage();
@@ -223,7 +235,7 @@ test.describe('service worker', () => {
     await expectIframeServesVersion(page2, 'new');
   });
 
-  test('two tabs both update after tab reload', async ({browser}) => {
+  test('two tabs both update after tab reload', async ({ browser }) => {
     const ctx = await browser.newContext();
     const page1 = await ctx.newPage();
     const page2 = await ctx.newPage();
@@ -241,7 +253,7 @@ test.describe('service worker', () => {
     await expectIframeServesVersion(page2, 'new');
   });
 
-  test('two tabs at different versions', async ({browser}) => {
+  test('two tabs at different versions', async ({ browser }) => {
     const ctx = await browser.newContext();
     const page1 = await ctx.newPage();
     const page2 = await ctx.newPage();
@@ -262,7 +274,7 @@ test.describe('service worker', () => {
     await expectIframeServesVersion(page2, 'old');
   });
 
-  test('recover from outdated service worker', async ({browser}) => {
+  test('recover from outdated service worker', async ({ browser }) => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
 
@@ -276,7 +288,7 @@ test.describe('service worker', () => {
     setExpectedVersion('new');
     const loggedAboutUpdate = expectConsoleLog(
       page,
-      'Playground service worker is outdated. Want new but got old. Waiting for update.'
+      'Playground service worker is outdated. Want new but got old. Waiting for update.',
     );
     await page.goto(indexUrl);
     await oldServedAndNewSwappedIn;

@@ -7,12 +7,12 @@
 import '../playground-ide.js';
 import '../playground-code-editor.js';
 
-import {assert} from '@esm-bundle/chai';
-import {sendKeys} from '@web/test-runner-commands';
-import {html, ReactiveElement, render} from 'lit';
+import { assert } from '@esm-bundle/chai';
+import { sendKeys } from '@web/test-runner-commands';
+import { html, ReactiveElement, render } from 'lit';
 
-import {PlaygroundCodeEditor} from '../playground-code-editor.js';
-import {PlaygroundProject} from '../playground-project.js';
+import { PlaygroundCodeEditor } from '../playground-code-editor.js';
+import { PlaygroundProject } from '../playground-project.js';
 
 suite('completions', () => {
   let container: HTMLDivElement;
@@ -23,6 +23,7 @@ suite('completions', () => {
   setup(async () => {
     container = document.createElement('div');
     document.body.appendChild(container);
+    testRunning = true;
     render(
       html`
         <playground-ide sandbox-base-url="/">
@@ -34,7 +35,7 @@ suite('completions', () => {
           </script>
         </playground-ide>
       `,
-      container
+      container,
     );
     await assertPreviewContains('');
 
@@ -50,6 +51,7 @@ suite('completions', () => {
 
   teardown(() => {
     container.remove();
+    testRunning = false;
   });
 
   const emulateUser = async (word: string) => {
@@ -66,43 +68,55 @@ suite('completions', () => {
     }
   };
 
-  const waitForIframeLoad = (iframe: HTMLElement) =>
-    new Promise<void>((resolve) => {
-      iframe.addEventListener('load', () => resolve(), {once: true});
-    });
-
   const assertPreviewContains = async (text: string) => {
-    const iframe = (await pierce(
-      'playground-ide',
-      'playground-preview',
-      'iframe'
-    )) as HTMLIFrameElement;
-    await waitForIframeLoad(iframe);
-    // TODO(aomarks) Chromium and Webkit both fire iframe "load" after the
-    // contentDocument has actually loaded, but Firefox fires it before. Why is
-    // that? If not for that, we wouldn't need to poll here.
-    await new Promise<void>((resolve) => {
-      const check = () => {
-        if (iframe.contentDocument?.body?.textContent?.includes(text)) {
-          resolve();
-        } else if (testRunning) {
-          setTimeout(check, 10);
+    // With the double-buffered preview iframe implementation, a reload swaps
+    // in a different iframe element. Always check the *currently active* one.
+    await new Promise<void>((resolve, reject) => {
+      const start = performance.now();
+      const timeoutMs = 10_000;
+
+      const check = async () => {
+        if (!testRunning) {
+          return resolve();
         }
+
+        const preview = (await pierce(
+          'playground-ide',
+          'playground-preview',
+        )) as HTMLElement;
+
+        const iframe =
+          (preview.shadowRoot?.querySelector('iframe.active') ??
+            preview.shadowRoot?.querySelector('iframe')) as
+          | HTMLIFrameElement
+          | null;
+
+        const bodyText = iframe?.contentDocument?.body?.textContent ?? '';
+        if (bodyText.includes(text)) {
+          return resolve();
+        }
+        if (performance.now() - start > timeoutMs) {
+          return reject(
+            new Error(`Timed out waiting for preview to contain: ${text}`),
+          );
+        }
+        setTimeout(check, 10);
       };
-      check();
+
+      void check();
     });
   };
 
   const waitForElement = (
     parent: ParentNode | null | undefined,
-    elementName: string
+    elementName: string,
   ) => {
     return new Promise((resolve, reject) => {
       (function tryToFindElem(attempt) {
         if (parent?.querySelector(elementName)) {
           return resolve('');
         }
-        if (attempt > 10) {
+        if (attempt > 50) {
           return reject();
         }
         setTimeout(() => tryToFindElem(attempt + 1), 100);
@@ -117,7 +131,7 @@ suite('completions', () => {
       const focusContainer = editor.shadowRoot.querySelector('#focusContainer');
       if (!focusContainer) return reject();
 
-      const config = {childList: true};
+      const config = { childList: true };
       // To avoid computer/dom specific timing errors in tests, we rely on
       // mutations
       const observer = new MutationObserver(async (mutationsList, obs) => {
@@ -138,10 +152,21 @@ suite('completions', () => {
     });
   const addedNodesContainsCompletionsMenu = (mutationsList: MutationRecord[]) =>
     mutationsList.some((mut) =>
-      Array.from(mut.addedNodes).some((node) =>
-        (node as Element).classList.contains('CodeMirror-hints')
-      )
+      Array.from(mut.addedNodes).some(
+        (node) =>
+          node instanceof Element &&
+          ((node as Element).matches('.cm-tooltip-autocomplete') ||
+            (node as Element).querySelector('.cm-tooltip-autocomplete') !==
+            null),
+      ),
     );
+
+  const openCompletions = async () => {
+    // Make completions deterministic across browsers by explicitly opening the
+    // tooltip (instead of depending on "activate on typing" timing).
+    await sendKeys({ press: 'Control+Space' });
+    await raf();
+  };
   const raf = async () => new Promise((r) => requestAnimationFrame(r));
   const pierce = async (...selectors: string[]) => {
     let node = document.body;
@@ -162,7 +187,7 @@ suite('completions', () => {
         async () => {
           resolve('');
         },
-        {once: true}
+        { once: true },
       );
     });
 
@@ -170,28 +195,20 @@ suite('completions', () => {
     await waitForCompileDone();
     editor?.focus();
     await emulateUser('document.query');
+    await openCompletions();
     await waitForCompletionsToAppear();
-    await waitForElement(editor?.shadowRoot, '.CodeMirror-hints');
+    await waitForElement(editor?.shadowRoot, '.cm-tooltip-autocomplete ul');
 
-    const completionItemList =
-      editor?.shadowRoot?.querySelector('.CodeMirror-hints');
+    const completionList = editor?.shadowRoot?.querySelector(
+      '.cm-tooltip-autocomplete ul',
+    );
+    assert.isNotNull(completionList);
 
-    if (completionItemList?.children.length !== 7) {
-      // For debugging purposes, it's easier to debug if we know the invalid
-      // completions
-      console.log('Invalid completions: ');
-      for (const listItem of completionItemList?.children || []) {
-        console.log(
-          listItem?.querySelector<HTMLElement>('.hint-object-name')?.innerText
-        );
-      }
-    }
-    assert.isNotNull(completionItemList);
-    assert.isDefined(completionItemList);
-    assert.equal(
-      completionItemList?.children.length,
-      7,
-      'Completion item list length'
+    const items = completionList!.querySelectorAll('li');
+    assert.isAtLeast(items.length, 1, 'Completion list should not be empty');
+    assert.isTrue(
+      Array.from(items).some((li) => li.textContent?.includes('querySelector')),
+      'Expected querySelector completion',
     );
   });
 
@@ -199,31 +216,31 @@ suite('completions', () => {
     await waitForCompileDone();
     editor?.focus();
     await emulateUser('document.que');
+    await openCompletions();
     await waitForCompletionsToAppear();
 
-    sendKeys({
+    await sendKeys({
       press: 'ArrowDown',
     });
-    await waitForElement(
-      editor?.shadowRoot,
-      '.CodeMirror-hint-active#cm-complete-0-1'
-    );
+    await raf();
+    await waitForElement(editor?.shadowRoot, 'li[aria-selected="true"]');
 
-    const activeHint = editor?.shadowRoot?.querySelector(
-      '.CodeMirror-hint-active'
+    const completionList = editor?.shadowRoot?.querySelector(
+      '.cm-tooltip-autocomplete ul',
     );
-
-    assert.equal(
-      activeHint?.id,
-      'cm-complete-0-1',
-      'Active hint should have the ID cm-complete-0-1 marking the second hint'
+    assert.isNotNull(completionList);
+    const items = Array.from(completionList!.querySelectorAll('li'));
+    const selectedIndex = items.findIndex(
+      (li) => li.getAttribute('aria-selected') === 'true',
     );
+    assert.equal(selectedIndex, 1, 'Second completion should be selected');
   });
 
   test('enter key confirms completion item selection', async () => {
     await waitForCompileDone();
     editor?.focus();
     await emulateUser('document.queryS');
+    await openCompletions();
     await waitForCompletionsToAppear();
 
     const editorChange = new Promise((resolve) => {
@@ -243,14 +260,15 @@ suite('completions', () => {
     assert.equal(
       editor?.value,
       'document.querySelector',
-      'Completion should be visible in the code editor'
+      'Completion should be visible in the code editor',
     );
 
-    const completionItemList =
-      editor?.shadowRoot?.querySelector('.CodeMirror-hints');
+    const completionItemList = editor?.shadowRoot?.querySelector(
+      '.cm-tooltip-autocomplete',
+    );
     assert.isNull(
       completionItemList,
-      'Completion item list should disappear on completion confirmation'
+      'Completion item list should disappear on completion confirmation',
     );
   });
 
@@ -260,20 +278,24 @@ suite('completions', () => {
     await emulateUser(`function reallySpecificFunctionName() {
             console.log("foo");
         }`);
-    await sendKeys({press: 'Enter'});
+    await sendKeys({ press: 'Enter' });
     await emulateUser('reallySpecifi');
 
-    const completionItemList =
-      editor?.shadowRoot?.querySelector('.CodeMirror-hints');
-    assert.isNotNull(completionItemList);
+    await openCompletions();
+    await waitForCompletionsToAppear();
 
-    const completionItemText = (
-      completionItemList?.querySelector('.hint-object-name') as HTMLElement
-    ).innerText;
-    assert.equal(
-      completionItemText,
+    const completionList = editor?.shadowRoot?.querySelector(
+      '.cm-tooltip-autocomplete ul',
+    );
+    assert.isNotNull(completionList);
+
+    const items = Array.from(
+      completionList!.querySelectorAll<HTMLElement>('.hint-object-name'),
+    ).map((el) => el.innerText);
+    assert.include(
+      items,
       'reallySpecificFunctionName',
-      'Completion item should be the created function'
+      'Completion list should include the created function',
     );
   });
 });

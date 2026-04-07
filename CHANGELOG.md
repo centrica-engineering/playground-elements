@@ -252,7 +252,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   preview reloaded.
 
 - Improvements to service worker version updates:
-
   - The service worker will require less frequent updates going forward.
     Previously it needed updating for every playground-elements release. Now it
     only needs updating if the bytes of the service worker have changed between
@@ -528,7 +527,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   keyboard help that shows when the editor is focused using the keyboard).
 
 - Added CSS custom properties:
-
   - `--playground-code-line-height`: `line-height` of code in the editor.
   - `--playground-tab-bar-font-size`: `font-size` of tabs in the file picker tab
     bar.
@@ -592,7 +590,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - TypeScript errors are now displayed in the editor with red underlines. A
   tooltip displaying the error is shown on hover.
-
   - Note that only basic/syntactic errors are currently shown, because typings
     of dependencies are not currently available to compilation.
 
@@ -773,7 +770,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Added `editableFileSystem` property (`editable-file-system` attribute) to
   `<playground-ide>`. When `true`, the user will be able to create, delete, and
   rename files in the virtual filesystem.
-
   - To create a new file: click the "+" icon button in the tab bar.
   - To rename a file: click the three-dots menu button on its tab, and select
     "Rename".
@@ -791,12 +787,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   removed.
 
 - [**BREAKING**] The following CSS custom properties have been renamed:
-
   - `--playground-file-picker-background` -> `--playground-tab-bar-background`
   - `--playground-file-picker-foreground` -> `--playground-tab-bar-foreground`
 
 - [**BREAKING**] The following CSS shadow parts have been renamed:
-
   - `file-picker` -> `tab-bar`
 
 ## [0.3.7] - 2021-01-08
@@ -988,7 +982,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   to `playground-elements`.
 
 - [**BREAKING**] Renamed all elements:
-
   - `<code-sample> -> <playground-ide>`
   - `<code-sample-project>` -> `<playground-project>`
   - `<code-sample-editor>` -> `<playground-file-editor>`
@@ -1006,7 +999,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - [**BREAKING**] Major refactor of elements to allow them to be more easily used
   independently. The new elements are:
-
   - `<code-sample>`: A single editor with file-selection bar and preview in
     side-by-side layout. If a different layout is required, the editor and
     preview elements can instead be used directly, along with a project element.
@@ -1083,13 +1075,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - An animated progress bar now displays when a preview is loading.
 
 - Added CSS Shadow Parts:
-
   - `<code-sample-editor>`: `file-picker`
   - `<code-sample-preview>`: `preview-toolbar`, `preview-location`, `preview-reload-button`, `preview-loading-indicator`
   - `<code-sample>`: `editor`, `preview`, `file-picker`, `preview-toolbar`, `preview-location`, `preview-reload-button`, `preview-loading-indicator`
 
 - Added CSS Custom Properties:
-
   - `--playground-code-font-family`
   - `--playground-code-font-size`
   - `--playground-editor-background-color`

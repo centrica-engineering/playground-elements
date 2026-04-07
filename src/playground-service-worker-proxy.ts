@@ -22,7 +22,7 @@ import {
     parent.window.console.warn(
       'Playground sandbox is executing with the same origin as its parent.',
       'This is a security risk.',
-      'https://github.com/google/playground-elements#sandbox-security'
+      'https://github.com/google/playground-elements#sandbox-security',
     );
     // eslint-disable-next-line no-empty
   } catch {}
@@ -45,7 +45,7 @@ import {
 
   const registration = await navigator.serviceWorker.register(
     new URL('playground-service-worker.js', import.meta.url).href,
-    {scope}
+    {scope},
   );
 
   /** https://www.w3.org/TR/service-workers/#get-newest-worker-algorithm */
@@ -69,7 +69,7 @@ import {
             aborter.abort();
           }
         },
-        {signal: aborter.signal}
+        {signal: aborter.signal},
       );
     });
   };
@@ -147,7 +147,7 @@ import {
         connectToNewest(true);
         /* eslint-enable @typescript-eslint/no-floating-promises */
       }
-    }
+    },
   );
 
   // A message from the project.
@@ -174,7 +174,7 @@ import {
           console.error('Playground service worker update failed.');
         }
       }
-    }
+    },
   );
 })();
 /* eslint-enable @typescript-eslint/no-floating-promises */

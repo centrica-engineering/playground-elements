@@ -1,6 +1,6 @@
 {
   "name": "@centrica-engineering/playground-elements",
-  "version": "0.18.3",
+  "version": "0.19.5",
   "description": "Serverless coding environments for the web",
   "author": "Google LLC",
   "license": "BSD-3-Clause",
@@ -11,7 +11,7 @@
     "registry": "https://npm.pkg.github.com/"
   },
   "scripts": {
-    "prepare": "if [ -f './web-test-runner.config.js' ]; then cd node_modules/puppeteer && PUPPETEER_PRODUCT=firefox node install.js; fi",
+    "prepare": "if [ -f './web-test-runner.config.js' ] && [ -d './node_modules/puppeteer' ]; then if [ -f './node_modules/puppeteer/install.mjs' ]; then PUPPETEER_PRODUCT=firefox node ./node_modules/puppeteer/install.mjs; elif [ -f './node_modules/puppeteer/install.js' ]; then PUPPETEER_PRODUCT=firefox node ./node_modules/puppeteer/install.js; fi; fi",
     "prepack": "wireit",
     "update-version-module": "wireit",
     "nuke": "npm run clean && rm -rf node_modules && npm install",
@@ -19,8 +19,6 @@
     "build": "wireit",
     "build:ts": "wireit",
     "build:styles-module": "wireit",
-    "build:themes": "wireit",
-    "build:codemirror": "wireit",
     "build:configurator": "wireit",
     "build:typescript-module": "wireit",
     "build:service-worker": "wireit",
@@ -38,11 +36,9 @@
     "build": {
       "dependencies": [
         "build:ts",
-        "build:themes",
         "build:service-worker",
         "build:web-worker",
-        "build:configurator",
-        "build:codemirror"
+        "build:configurator"
       ]
     },
     "prepack": {
@@ -55,8 +51,7 @@
       "command": "tsc --build --pretty",
       "clean": "if-file-deleted",
       "dependencies": [
-        "build:styles-module",
-        "build:themes"
+        "build:styles-module"
       ],
       "files": [
         "tsconfig.json",
@@ -84,24 +79,13 @@
       ]
     },
     "build:styles-module": {
-      "command": "FORCE_COLOR=1 rollup -c rollup.config.styles.js",
+      "command": "node scripts/generate-playground-styles.js",
       "files": [
         "playground-styles.css",
-        "rollup.config.styles.js"
+        "scripts/generate-playground-styles.js"
       ],
       "output": [
         "src/playground-styles.ts"
-      ]
-    },
-    "build:themes": {
-      "command": "node scripts/theme-generator.js",
-      "files": [
-        "scripts/theme-generator.js"
-      ],
-      "output": [
-        "themes/**/*.css",
-        "src/themes/**/*.css.ts",
-        "src/configurator/themes.ts"
       ]
     },
     "build:typescript-module": {
@@ -141,24 +125,12 @@
         "playground-typescript-worker.js"
       ]
     },
-    "build:codemirror": {
-      "command": "FORCE_COLOR=1 rollup -c rollup.config.codemirror.js",
-      "files": [
-        "rollup.config.codemirror.js",
-        "rollup.config.common.js",
-        "src/_codemirror/codemirror-bundle.js"
-      ],
-      "output": [
-        "_codemirror/codemirror-bundle.js"
-      ]
-    },
     "build:configurator": {
       "command": "FORCE_COLOR=1 rollup -c rollup.config.configurator.js",
       "dependencies": [
         "build:ts",
         "build:service-worker",
-        "build:web-worker",
-        "build:codemirror"
+        "build:web-worker"
       ],
       "files": [
         "rollup.config.configurator.js",
@@ -180,8 +152,7 @@
       "dependencies": [
         "build:ts",
         "build:service-worker",
-        "build:web-worker",
-        "build:codemirror"
+        "build:web-worker"
       ],
       "files": [
         "web-test-runner.config.js"
@@ -193,8 +164,7 @@
       "dependencies": [
         "build:ts",
         "build:service-worker",
-        "build:web-worker",
-        "build:codemirror"
+        "build:web-worker"
       ],
       "files": [
         "playwright.config.ts"
@@ -245,7 +215,6 @@
     }
   },
   "files": [
-    "_codemirror/",
     "images/",
     "index.{js,d.ts,d.ts.map}",
     "playground-code-editor.{js,d.ts,d.ts.map}",
@@ -266,49 +235,50 @@
     "themes/*.css.{js,d.ts,d.ts.map}"
   ],
   "devDependencies": {
-    "@esm-bundle/chai": "^4.1.5",
-    "@material/mwc-dialog": "^0.27.0",
-    "@playwright/test": "^1.15.1",
-    "@rollup/plugin-commonjs": "^23.0.2",
-    "@rollup/plugin-node-resolve": "^15.0.1",
-    "@rollup/plugin-replace": "^5.0.1",
-    "@rollup/plugin-terser": "^0.1.0",
-    "@types/semver": "^7.3.6",
-    "@typescript-eslint/eslint-plugin": "^5.42.1",
-    "@typescript-eslint/parser": "^5.42.1",
-    "@web/dev-server": "^0.1.4",
-    "@web/test-runner": "^0.15.0",
-    "@web/test-runner-playwright": "^0.9.0",
-    "@web/test-runner-puppeteer": "^0.11.0",
-    "clean-css": "^5.1.2",
-    "codemirror": "^5.65.9",
-    "codemirror-grammar-mode": "^0.1.10",
-    "es-module-lexer": "^1.1.0",
-    "eslint": "^8.27.0",
-    "eslint-plugin-import": "^2.23.4",
-    "eslint-plugin-no-only-tests": "^3.1.0",
-    "google_modes": "github:codemirror/google-modes#247b63cee78b3775f8a3173184bf706c5b006d25",
-    "playwright": "^1.15.1",
-    "prettier": "^2.0.5",
-    "rollup": "^3.2.5",
-    "rollup-plugin-copy": "^3.3.0",
-    "rollup-plugin-lit-css": "^4.0.0",
-    "semver": "^7.3.5",
-    "typescript": "~4.8.4",
-    "wireit": "^0.7.3-pre.3"
+    "@esm-bundle/chai": "^4.3.4",
+    "@playwright/test": "^1.57.0",
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-replace": "^6.0.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@types/mocha": "^10.0.10",
+    "@types/semver": "^7.7.1",
+    "@typescript-eslint/eslint-plugin": "^8.53.1",
+    "@typescript-eslint/parser": "^8.53.1",
+    "@web/dev-server": "^0.4.6",
+    "@web/test-runner": "^0.20.2",
+    "@web/test-runner-playwright": "^0.11.1",
+    "@web/test-runner-puppeteer": "^0.18.0",
+    "clean-css": "^5.3.3",
+    "es-module-lexer": "^2.0.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-no-only-tests": "^3.3.0",
+    "playwright": "^1.57.0",
+    "prettier": "^3.8.0",
+    "rollup": "^4.55.3",
+    "rollup-plugin-copy": "^3.5.0",
+    "semver": "^7.7.3",
+    "typescript": "~5.9.3",
+    "wireit": "^0.14.12"
   },
   "dependencies": {
-    "@material/mwc-button": "^0.27.0",
-    "@material/mwc-icon-button": "^0.27.0",
-    "@material/mwc-linear-progress": "^0.27.0",
-    "@material/mwc-list": "^0.27.0",
-    "@material/mwc-menu": "^0.27.0",
-    "@material/mwc-textfield": "^0.27.0",
-    "@types/codemirror": "^5.60.0",
-    "comlink": "=4.3.1",
-    "fuse.js": "^6.4.6",
-    "lit": "^2.0.0",
-    "tslib": "^2.0.3",
-    "vscode-languageserver-protocol": "^3.17.2"
+    "parse5": "^7.2.1",
+    "@codemirror/autocomplete": "^6.20.0",
+    "@codemirror/commands": "^6.10.1",
+    "@codemirror/lang-css": "^6.3.1",
+    "@codemirror/lang-html": "^6.4.11",
+    "@codemirror/lang-javascript": "^6.2.4",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/language": "^6.12.1",
+    "@codemirror/state": "^6.5.4",
+    "@codemirror/view": "^6.39.11",
+    "@lezer/highlight": "^1.2.3",
+    "@material/web": "^2.4.1",
+    "comlink": "=4.4.2",
+    "fuse.js": "^7.1.0",
+    "lit": "^3.3.2",
+    "tslib": "^2.8.1",
+    "vscode-languageserver-protocol": "^3.17.5"
   }
 }

@@ -33,7 +33,7 @@ export class MergedAsyncIterables<T> {
   add(iterable: AsyncIterable<T>) {
     if (this._done) {
       throw new Error(
-        'Merged iterator is exhausted. Cannot add new source iterators.'
+        'Merged iterator is exhausted. Cannot add new source iterators.',
       );
     }
     this._numSources++;
@@ -90,14 +90,13 @@ export const resolveUrlPath = (a: string, b: string) =>
  * a fully qualified URL.
  */
 export const classifySpecifier = (
-  specifier: string
+  specifier: string,
 ): 'bare' | 'relative' | 'url' => {
   try {
     // Note a specifier like "te:st.js" would be classified as a URL. This is
     // ok, because we can assume bare specifiers are always prefixed with a NPM
     // package name, which cannot contain ":" characters.
-    new URL(specifier).href;
-    return 'url';
+    return new URL(specifier).href ? 'url' : 'bare';
     // eslint-disable-next-line no-empty
   } catch {}
   if (specifier.match(/^(\.){0,2}\//) !== null) {
@@ -123,7 +122,7 @@ export interface NpmFileLocation {
  * }
  */
 export const parseNpmStyleSpecifier = (
-  specifier: string
+  specifier: string,
 ): NpmFileLocation | undefined => {
   const match = specifier.match(/^((?:@[^/@]+\/)?[^/@]+)(?:@([^/]+))?\/?(.*)$/);
   if (match === null) {
@@ -133,7 +132,7 @@ export const parseNpmStyleSpecifier = (
     unknown,
     string,
     string | undefined,
-    string
+    string,
   ];
   return {pkg, version: version ?? '', path};
 };
@@ -170,7 +169,7 @@ export const changeFileExtension = (path: string, newExt: string): string => {
  */
 export const charToLineAndChar = (
   str: string,
-  char: number
+  char: number,
 ): {line: number; character: number} => {
   let line = 0;
   let character = 0;
@@ -252,7 +251,7 @@ export interface PackageJsonWithExports extends PackageJson {
 export const isExactSemverVersion = (s: string) =>
   s.match(
     // https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/,
   ) !== null;
 
 export const pkgVersion = ({pkg, version}: {pkg: string; version: string}) =>

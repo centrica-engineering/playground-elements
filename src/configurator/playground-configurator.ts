@@ -23,8 +23,7 @@ import {
   knobsBySection,
 } from './knobs.js';
 import {themeStyles} from './themes.js';
-import '@material/mwc-dialog';
-import '@material/mwc-button';
+import '@material/web/dialog/dialog.js';
 import './playground-theme-detector.js';
 import {tokens} from './highlight-tokens.js';
 
@@ -303,19 +302,20 @@ export class PlaygroundConfigurator extends LitElement {
         ${this.cssText}
       </style>
 
-      <mwc-dialog
-        hideActions
+      <md-dialog
         id="detectorDialog"
         .open=${this._themeDetectorOpen}
         @closed=${this._closeThemeDetector}
       >
-        ${this._themeDetectorOpen
-          ? html`<playground-theme-detector
-              @apply=${this._onThemeDetectorApply}
-              @cancel=${this._closeThemeDetector}
-            ></playground-theme-detector>`
-          : nothing}
-      </mwc-dialog>
+        <div slot="content">
+          ${this._themeDetectorOpen
+            ? html`<playground-theme-detector
+                @apply=${this._onThemeDetectorApply}
+                @cancel=${this._closeThemeDetector}
+              ></playground-theme-detector>`
+            : nothing}
+        </div>
+      </md-dialog>
 
       <div id="lhs">${this.knobs}</div>
 
@@ -369,7 +369,7 @@ export class PlaygroundConfigurator extends LitElement {
           <div class="knobs">
             ${knobsBySection[section].map((knob) => this.knob(knob))}
           </div>
-        </section>`
+        </section>`,
     );
   }
 
@@ -489,7 +489,7 @@ ${props.join('\n')}
           (option) =>
             html`<option value=${option} ?selected=${option === value}>
               ${option}
-            </option>`
+            </option>`,
         )}
       </select>
     `;
@@ -570,7 +570,7 @@ ${props.join('\n')}
   }
 
   private async _onThemeDetectorApply(
-    event: CustomEvent<{properties: Map<string, string | null>}>
+    event: CustomEvent<{properties: Map<string, string | null>}>,
   ) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const values = new Map<KnobId, any>();
@@ -670,7 +670,7 @@ const githubCorner = html`<a
  */
 const toHex = (rgbStr: string): string => {
   const match = rgbStr.match(
-    /^\s*rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)\s*$/
+    /^\s*rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)\s*$/,
   );
   if (!match) {
     return '';
