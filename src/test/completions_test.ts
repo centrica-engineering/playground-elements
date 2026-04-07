@@ -7,12 +7,12 @@
 import '../playground-ide.js';
 import '../playground-code-editor.js';
 
-import { assert } from '@esm-bundle/chai';
-import { sendKeys } from '@web/test-runner-commands';
-import { html, ReactiveElement, render } from 'lit';
+import {assert} from '@esm-bundle/chai';
+import {sendKeys} from '@web/test-runner-commands';
+import {html, ReactiveElement, render} from 'lit';
 
-import { PlaygroundCodeEditor } from '../playground-code-editor.js';
-import { PlaygroundProject } from '../playground-project.js';
+import {PlaygroundCodeEditor} from '../playground-code-editor.js';
+import {PlaygroundProject} from '../playground-project.js';
 
 suite('completions', () => {
   let container: HTMLDivElement;
@@ -85,11 +85,10 @@ suite('completions', () => {
           'playground-preview',
         )) as HTMLElement;
 
-        const iframe =
-          (preview.shadowRoot?.querySelector('iframe.active') ??
-            preview.shadowRoot?.querySelector('iframe')) as
-          | HTMLIFrameElement
-          | null;
+        const iframe = (preview.shadowRoot?.querySelector('iframe.active') ??
+          preview.shadowRoot?.querySelector(
+            'iframe',
+          )) as HTMLIFrameElement | null;
 
         const bodyText = iframe?.contentDocument?.body?.textContent ?? '';
         if (bodyText.includes(text)) {
@@ -131,7 +130,7 @@ suite('completions', () => {
       const focusContainer = editor.shadowRoot.querySelector('#focusContainer');
       if (!focusContainer) return reject();
 
-      const config = { childList: true };
+      const config = {childList: true};
       // To avoid computer/dom specific timing errors in tests, we rely on
       // mutations
       const observer = new MutationObserver(async (mutationsList, obs) => {
@@ -157,14 +156,14 @@ suite('completions', () => {
           node instanceof Element &&
           ((node as Element).matches('.cm-tooltip-autocomplete') ||
             (node as Element).querySelector('.cm-tooltip-autocomplete') !==
-            null),
+              null),
       ),
     );
 
   const openCompletions = async () => {
     // Make completions deterministic across browsers by explicitly opening the
     // tooltip (instead of depending on "activate on typing" timing).
-    await sendKeys({ press: 'Control+Space' });
+    await sendKeys({press: 'Control+Space'});
     await raf();
   };
   const raf = async () => new Promise((r) => requestAnimationFrame(r));
@@ -187,7 +186,7 @@ suite('completions', () => {
         async () => {
           resolve('');
         },
-        { once: true },
+        {once: true},
       );
     });
 
@@ -278,7 +277,7 @@ suite('completions', () => {
     await emulateUser(`function reallySpecificFunctionName() {
             console.log("foo");
         }`);
-    await sendKeys({ press: 'Enter' });
+    await sendKeys({press: 'Enter'});
     await emulateUser('reallySpecifi');
 
     await openCompletions();

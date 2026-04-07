@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { LitElement, css, html, PropertyValues } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators.js';
-import { ifDefined } from 'lit/directives/if-defined.js';
+import {LitElement, css, html, PropertyValues} from 'lit';
+import {customElement, property, query, state} from 'lit/decorators.js';
+import {ifDefined} from 'lit/directives/if-defined.js';
 import {
   autocompletion,
   completionKeymap,
@@ -33,24 +33,24 @@ import {
   WidgetType,
 } from './internal/codemirror.js';
 import playgroundStyles from './playground-styles.js';
-import { Diagnostic } from 'vscode-languageserver-protocol';
+import {Diagnostic} from 'vscode-languageserver-protocol';
 import {
   EditorCompletion,
   EditorCompletionDetails,
   EditorPosition,
   EditorToken,
 } from './shared/worker-api.js';
-import { javascript } from '@codemirror/lang-javascript';
-import { html as htmlLang } from '@codemirror/lang-html';
-import { css as cssLang } from '@codemirror/lang-css';
-import { json as jsonLang } from '@codemirror/lang-json';
-import { Transaction, type Extension } from '@codemirror/state';
+import {javascript} from '@codemirror/lang-javascript';
+import {html as htmlLang} from '@codemirror/lang-html';
+import {css as cssLang} from '@codemirror/lang-css';
+import {json as jsonLang} from '@codemirror/lang-json';
+import {Transaction, type Extension} from '@codemirror/state';
 import type {
   Completion,
   CompletionContext,
   CompletionResult,
 } from '@codemirror/autocomplete';
-import { ViewPlugin, type ViewUpdate } from '@codemirror/view';
+import {ViewPlugin, type ViewUpdate} from '@codemirror/view';
 
 // TODO(aomarks) Could we upstream this to lit-element? It adds much stricter
 // types to the ChangedProperties type.
@@ -60,26 +60,26 @@ interface TypedMap<T> {
 }
 
 const highlightClasses = HighlightStyle.define([
-  { tag: tags.keyword, class: 'cm-keyword' },
+  {tag: tags.keyword, class: 'cm-keyword'},
   // In CM6, some things (notably CSS color keywords like "blue") are tagged as
   // `atom`. In CM5 these aligned more closely with `keyword` styling in this
   // project, so we map `atom` to the keyword class.
-  { tag: tags.atom, class: 'cm-keyword' },
-  { tag: [tags.bool, tags.null], class: 'cm-atom' },
-  { tag: tags.number, class: 'cm-number' },
-  { tag: tags.definition(tags.variableName), class: 'cm-def' },
-  { tag: tags.variableName, class: 'cm-variable' },
+  {tag: tags.atom, class: 'cm-keyword'},
+  {tag: [tags.bool, tags.null], class: 'cm-atom'},
+  {tag: tags.number, class: 'cm-number'},
+  {tag: tags.definition(tags.variableName), class: 'cm-def'},
+  {tag: tags.variableName, class: 'cm-variable'},
   // JSON object keys are typically tagged as `propertyName`. In CM5 they were
   // styled like strings in this project.
-  { tag: tags.propertyName, class: 'cm-string' },
-  { tag: tags.operator, class: 'cm-operator' },
-  { tag: tags.typeName, class: 'cm-type' },
-  { tag: tags.tagName, class: 'cm-tag' },
-  { tag: tags.attributeName, class: 'cm-attribute' },
-  { tag: [tags.string, tags.special(tags.string)], class: 'cm-string' },
-  { tag: tags.comment, class: 'cm-comment' },
-  { tag: tags.meta, class: 'cm-meta' },
-  { tag: tags.invalid, class: 'cm-error' },
+  {tag: tags.propertyName, class: 'cm-string'},
+  {tag: tags.operator, class: 'cm-operator'},
+  {tag: tags.typeName, class: 'cm-type'},
+  {tag: tags.tagName, class: 'cm-tag'},
+  {tag: tags.attributeName, class: 'cm-attribute'},
+  {tag: [tags.string, tags.special(tags.string)], class: 'cm-string'},
+  {tag: tags.comment, class: 'cm-comment'},
+  {tag: tags.meta, class: 'cm-meta'},
+  {tag: tags.invalid, class: 'cm-error'},
 ]);
 
 const hideLineNumbersFromAT = ViewPlugin.fromClass(
@@ -140,7 +140,7 @@ class FoldMarkerWidget extends WidgetType {
     span.addEventListener('mousedown', (e) => {
       e.preventDefault();
       view.dispatch({
-        effects: togglePragmaFoldEffect.of({ from: this._from, to: this._to }),
+        effects: togglePragmaFoldEffect.of({from: this._from, to: this._to}),
       });
     });
     return span;
@@ -148,13 +148,13 @@ class FoldMarkerWidget extends WidgetType {
 }
 
 type PragmaRegion =
-  | { kind: 'comment'; from: number; to: number; readOnly: boolean }
-  | { kind: 'hide'; from: number; to: number; readOnly: boolean }
-  | { kind: 'fold'; from: number; to: number; readOnly: boolean };
+  | {kind: 'comment'; from: number; to: number; readOnly: boolean}
+  | {kind: 'hide'; from: number; to: number; readOnly: boolean}
+  | {kind: 'fold'; from: number; to: number; readOnly: boolean};
 
 const setDiagnosticsEffect = StateEffect.define<Diagnostic[] | undefined>();
 const setPragmaRegionsEffect = StateEffect.define<PragmaRegion[]>();
-const togglePragmaFoldEffect = StateEffect.define<{ from: number; to: number }>();
+const togglePragmaFoldEffect = StateEffect.define<{from: number; to: number}>();
 
 const diagnosticsField = StateField.define<DecorationSet>({
   create() {
@@ -180,7 +180,7 @@ const diagnosticsField = StateField.define<DecorationSet>({
           );
           if (start === null || end === null || end <= start) continue;
           ranges.push(
-            Decoration.mark({ class: `diagnostic diagnostic-${i}` }).range(
+            Decoration.mark({class: `diagnostic diagnostic-${i}`}).range(
               start,
               end,
             ),
@@ -219,12 +219,19 @@ const pragmaField = StateField.define<PragmaState>({
 
     value = {
       decorations: value.decorations.map(tr.changes),
-      readOnlyRanges: value.readOnlyRanges.map(mapRange).filter(([f, t]) => t > f),
+      readOnlyRanges: value.readOnlyRanges
+        .map(mapRange)
+        .filter(([f, t]) => t > f),
       regions: value.regions,
-      expandedFolds: value.expandedFolds.map(mapRange).filter(([f, t]) => t > f),
+      expandedFolds: value.expandedFolds
+        .map(mapRange)
+        .filter(([f, t]) => t > f),
     };
 
-    const rebuild = (regions: PragmaRegion[], expanded: Array<[number, number]>) => {
+    const rebuild = (
+      regions: PragmaRegion[],
+      expanded: Array<[number, number]>,
+    ) => {
       const expandedSet = new Set(expanded.map(([f, t]) => `${f}:${t}`));
       const ranges: Array<ReturnType<Decoration['range']>> = [];
       const readOnlyRanges: Array<[number, number]> = [];
@@ -248,7 +255,7 @@ const pragmaField = StateField.define<PragmaState>({
           if (region.readOnly) readOnlyRanges.push([from, to]);
         }
       }
-      return { decorations: Decoration.set(ranges, true), readOnlyRanges };
+      return {decorations: Decoration.set(ranges, true), readOnlyRanges};
     };
 
     for (const effect of tr.effects) {
@@ -266,9 +273,11 @@ const pragmaField = StateField.define<PragmaState>({
       }
 
       if (effect.is(togglePragmaFoldEffect)) {
-        const { from, to } = effect.value;
+        const {from, to} = effect.value;
         const key = `${from}:${to}`;
-        const expandedSet = new Set(value.expandedFolds.map(([f, t]) => `${f}:${t}`));
+        const expandedSet = new Set(
+          value.expandedFolds.map(([f, t]) => `${f}:${t}`),
+        );
         if (expandedSet.has(key)) {
           expandedSet.delete(key);
         } else {
@@ -279,7 +288,9 @@ const pragmaField = StateField.define<PragmaState>({
             const [f, t] = k.split(':');
             return [Number(f), Number(t)] as [number, number];
           })
-          .filter(([f, t]) => Number.isFinite(f) && Number.isFinite(t) && t > f);
+          .filter(
+            ([f, t]) => Number.isFinite(f) && Number.isFinite(t) && t > f,
+          );
         const rebuilt = rebuild(value.regions, expandedFolds);
         return {
           ...value,
@@ -333,7 +344,7 @@ function tokenUnderCursor(state: EditorState): EditorToken {
   let end = offset;
   while (start > 0 && isWord(text[start - 1])) start--;
   while (end < text.length && isWord(text[end])) end++;
-  return { start, end, string: text.slice(start, end) };
+  return {start, end, string: text.slice(start, end)};
 }
 
 const htmlTargetNearCursor = (state: EditorState) => {
@@ -357,14 +368,12 @@ const htmlTargetNearCursor = (state: EditorState) => {
   const idMatch = tagText.match(/\bid\s*=\s*("([^"]+)"|'([^']+)')/i);
   const id = idMatch?.[2] ?? idMatch?.[3];
 
-  const classMatch = tagText.match(
-    /\bclass\s*=\s*("([^"]+)"|'([^']+)')/i,
-  );
+  const classMatch = tagText.match(/\bclass\s*=\s*("([^"]+)"|'([^']+)')/i);
   const classAttr = classMatch?.[2] ?? classMatch?.[3];
   const className = classAttr?.trim().split(/\s+/)[0];
 
   if (!tagName && !id && !className) return undefined;
-  return { tagName, id, className };
+  return {tagName, id, className};
 };
 /**
  * A basic text editor with syntax highlighting for HTML, CSS, and JavaScript.
@@ -478,10 +487,10 @@ export class PlaygroundCodeEditor extends LitElement {
 
   get cursorPosition(): EditorPosition {
     const view = this._view;
-    if (!view) return { ch: 0, line: 0 };
+    if (!view) return {ch: 0, line: 0};
     const pos = view.state.selection.main.from;
     const line = view.state.doc.lineAt(pos);
-    return { line: line.number - 1, ch: pos - line.from };
+    return {line: line.number - 1, ch: pos - line.from};
   }
 
   get cursorIndex(): number {
@@ -492,7 +501,7 @@ export class PlaygroundCodeEditor extends LitElement {
 
   get tokenUnderCursor(): EditorToken {
     const view = this._view;
-    if (!view) return { start: 0, end: 0, string: '' };
+    if (!view) return {start: 0, end: 0, string: ''};
     return tokenUnderCursor(view.state);
   }
 
@@ -523,7 +532,7 @@ export class PlaygroundCodeEditor extends LitElement {
   // The document key whose state is currently installed in `_view`.
   private _activeDocumentKey?: object;
 
-  @property({ attribute: false })
+  @property({attribute: false})
   get documentKey(): object | undefined {
     return this._documentKey;
   }
@@ -552,31 +561,31 @@ export class PlaygroundCodeEditor extends LitElement {
    * If true, display a left-hand-side gutter with line numbers. Default false
    * (hidden).
    */
-  @property({ type: Boolean, attribute: 'line-numbers', reflect: true })
+  @property({type: Boolean, attribute: 'line-numbers', reflect: true})
   lineNumbers = false;
 
   /**
    * If true, wrap for long lines. Default false
    */
-  @property({ type: Boolean, attribute: 'line-wrapping', reflect: true })
+  @property({type: Boolean, attribute: 'line-wrapping', reflect: true})
   lineWrapping = false;
 
   /**
    * If true, this editor is not editable.
    */
-  @property({ type: Boolean, reflect: true })
+  @property({type: Boolean, reflect: true})
   readonly = false;
 
   /**
    * If true, will disable code completions in the code-editor.
    */
-  @property({ type: Boolean, attribute: 'no-completions' })
+  @property({type: Boolean, attribute: 'no-completions'})
   noCompletions = false;
 
   /**
    * Diagnostics to display on the current file.
    */
-  @property({ attribute: false })
+  @property({attribute: false})
   diagnostics?: Array<Diagnostic>;
 
   /**
@@ -819,7 +828,7 @@ export class PlaygroundCodeEditor extends LitElement {
 
   private _createState(doc: string): EditorState {
     const extensions: Extension[] = [
-      history({ newGroupDelay: 0 }),
+      history({newGroupDelay: 0}),
       // CM6 cursor and selection are drawn by this extension.
       drawSelection(),
       keymap.of([
@@ -848,7 +857,7 @@ export class PlaygroundCodeEditor extends LitElement {
       ]),
       // CM5 tests assert on line text content, and the CM6 default fold gutter
       // uses visible glyphs. Disable those glyphs to keep assertions stable.
-      foldGutter({ openText: '', closedText: '' }),
+      foldGutter({openText: '', closedText: ''}),
       codeMirrorTheme,
       syntaxHighlighting(highlightClasses),
       hideLineNumbersFromAT,
@@ -891,7 +900,7 @@ export class PlaygroundCodeEditor extends LitElement {
       // Don't allow naturally tabbing into the editor, because it's a
       // tab-trap. Instead, the container is focusable, and Enter/Escape are
       // used to explicitly enter the editable area.
-      EditorView.contentAttributes.of({ tabindex: '-1' }),
+      EditorView.contentAttributes.of({tabindex: '-1'}),
       this._languageCompartment.of([]),
       this._lineNumbersCompartment.of([]),
       this._lineWrappingCompartment.of([]),
@@ -899,7 +908,7 @@ export class PlaygroundCodeEditor extends LitElement {
       this._completionCompartment.of([]),
       this._viewportMarginCompartment.of([]),
     ];
-    return EditorState.create({ doc, extensions });
+    return EditorState.create({doc, extensions});
   }
 
   private _syncViewConfiguration() {
@@ -951,7 +960,7 @@ export class PlaygroundCodeEditor extends LitElement {
     const cur = view.state.doc.toString();
     if (cur !== desiredDoc) {
       view.dispatch({
-        changes: { from: 0, to: view.state.doc.length, insert: desiredDoc },
+        changes: {from: 0, to: view.state.doc.length, insert: desiredDoc},
         annotations: addToHistory
           ? undefined
           : Transaction.addToHistory.of(false),
@@ -967,7 +976,7 @@ export class PlaygroundCodeEditor extends LitElement {
     const cur = view.state.doc.toString();
     if (cur === value) return;
     view.dispatch({
-      changes: { from: 0, to: view.state.doc.length, insert: value },
+      changes: {from: 0, to: view.state.doc.length, insert: value},
     });
     if (this._activeDocumentKey) {
       this._docCache.set(this._activeDocumentKey, view.state);
@@ -981,13 +990,13 @@ export class PlaygroundCodeEditor extends LitElement {
     const lang = (() => {
       switch (this.type) {
         case 'ts':
-          return javascript({ typescript: true });
+          return javascript({typescript: true});
         case 'js':
-          return javascript({ typescript: false });
+          return javascript({typescript: false});
         case 'jsx':
-          return javascript({ jsx: true, typescript: false });
+          return javascript({jsx: true, typescript: false});
         case 'tsx':
-          return javascript({ jsx: true, typescript: true });
+          return javascript({jsx: true, typescript: true});
         case 'html':
           return htmlLang();
         case 'css':
@@ -999,21 +1008,21 @@ export class PlaygroundCodeEditor extends LitElement {
       }
     })();
 
-    view.dispatch({ effects: this._languageCompartment.reconfigure(lang) });
+    view.dispatch({effects: this._languageCompartment.reconfigure(lang)});
   }
 
   private _syncLineNumbers() {
     const view = this._view;
     if (!view) return;
     const ext: Extension = this.lineNumbers ? lineNumbers() : [];
-    view.dispatch({ effects: this._lineNumbersCompartment.reconfigure(ext) });
+    view.dispatch({effects: this._lineNumbersCompartment.reconfigure(ext)});
   }
 
   private _syncLineWrapping() {
     const view = this._view;
     if (!view) return;
     const ext: Extension = this.lineWrapping ? EditorView.lineWrapping : [];
-    view.dispatch({ effects: this._lineWrappingCompartment.reconfigure(ext) });
+    view.dispatch({effects: this._lineWrappingCompartment.reconfigure(ext)});
   }
 
   private _syncReadonly() {
@@ -1022,7 +1031,7 @@ export class PlaygroundCodeEditor extends LitElement {
     const ext: Extension = this.readonly
       ? [EditorState.readOnly.of(true), EditorView.editable.of(false)]
       : [];
-    view.dispatch({ effects: this._readOnlyCompartment.reconfigure(ext) });
+    view.dispatch({effects: this._readOnlyCompartment.reconfigure(ext)});
   }
 
   private _syncCompletions() {
@@ -1032,24 +1041,24 @@ export class PlaygroundCodeEditor extends LitElement {
     const enabled = !this.noCompletions && this.type === 'ts';
     const ext: Extension = enabled
       ? autocompletion({
-        override: [this._completionSource.bind(this)],
-        // Avoid flakiness where Arrow keys typed immediately after opening
-        // completion go to the editor instead of the completion list.
-        interactionDelay: 0,
-        addToOptions: [
-          {
-            position: 50,
-            render: (completion) => {
-              const span = document.createElement('span');
-              span.className = 'hint-object-name';
-              span.textContent = completion.label;
-              return span;
+          override: [this._completionSource.bind(this)],
+          // Avoid flakiness where Arrow keys typed immediately after opening
+          // completion go to the editor instead of the completion list.
+          interactionDelay: 0,
+          addToOptions: [
+            {
+              position: 50,
+              render: (completion) => {
+                const span = document.createElement('span');
+                span.className = 'hint-object-name';
+                span.textContent = completion.label;
+                return span;
+              },
             },
-          },
-        ],
-      })
+          ],
+        })
       : [];
-    view.dispatch({ effects: this._completionCompartment.reconfigure(ext) });
+    view.dispatch({effects: this._completionCompartment.reconfigure(ext)});
   }
 
   private async _completionSource(
@@ -1073,8 +1082,8 @@ export class PlaygroundCodeEditor extends LitElement {
       tokenText.length > this._lastCompletionToken.length &&
       tokenText.startsWith(this._lastCompletionToken) &&
       cursorIndex ===
-      this._lastCompletionCursorIndex +
-      (tokenText.length - this._lastCompletionToken.length);
+        this._lastCompletionCursorIndex +
+          (tokenText.length - this._lastCompletionToken.length);
 
     const fileContent = context.state.doc.toString();
 
@@ -1101,11 +1110,11 @@ export class PlaygroundCodeEditor extends LitElement {
       apply: c.text,
       info: c.details
         ? async () => {
-          const details: EditorCompletionDetails = await c.details!;
-          const div = document.createElement('div');
-          div.textContent = details.text;
-          return div;
-        }
+            const details: EditorCompletionDetails = await c.details!;
+            const div = document.createElement('div');
+            div.textContent = details.text;
+            return div;
+          }
         : undefined,
     }));
 
@@ -1113,13 +1122,13 @@ export class PlaygroundCodeEditor extends LitElement {
     const to = match?.to ?? context.pos;
     // Disable CM6's built-in filtering, since the project provider already
     // performs its own fuzzy ranking and trimming.
-    return { from, to, options, filter: false };
+    return {from, to, options, filter: false};
   }
 
   private _syncDiagnostics() {
     const view = this._view;
     if (!view) return;
-    view.dispatch({ effects: setDiagnosticsEffect.of(this.diagnostics) });
+    view.dispatch({effects: setDiagnosticsEffect.of(this.diagnostics)});
   }
 
   private _syncPragmas() {
@@ -1127,7 +1136,7 @@ export class PlaygroundCodeEditor extends LitElement {
     if (!view) return;
     const pattern = this._maskPatternForLang();
     if (!pattern || this.pragmas === 'off-visible') {
-      view.dispatch({ effects: setPragmaRegionsEffect.of([]) });
+      view.dispatch({effects: setPragmaRegionsEffect.of([])});
       return;
     }
 
@@ -1185,7 +1194,7 @@ export class PlaygroundCodeEditor extends LitElement {
         }
       }
     }
-    view.dispatch({ effects: setPragmaRegionsEffect.of(regions) });
+    view.dispatch({effects: setPragmaRegionsEffect.of(regions)});
   }
 
   private _syncTemplateHighlights() {
@@ -1202,7 +1211,7 @@ export class PlaygroundCodeEditor extends LitElement {
         const i = t.index;
         if (i === undefined) continue;
         decos.push(
-          Decoration.mark({ class: 'cm-tag' }).range(i, i + t[0].length),
+          Decoration.mark({class: 'cm-tag'}).range(i, i + t[0].length),
         );
       }
       view.dispatch({
@@ -1212,7 +1221,7 @@ export class PlaygroundCodeEditor extends LitElement {
     }
 
     if (this.type !== 'js' && this.type !== 'ts') {
-      view.dispatch({ effects: setTemplateHighlightsEffect.of(Decoration.none) });
+      view.dispatch({effects: setTemplateHighlightsEffect.of(Decoration.none)});
       return;
     }
 
@@ -1231,7 +1240,7 @@ export class PlaygroundCodeEditor extends LitElement {
           const i = t.index;
           if (i === undefined) continue;
           decos.push(
-            Decoration.mark({ class: 'cm-tag' }).range(
+            Decoration.mark({class: 'cm-tag'}).range(
               bodyStart + i,
               bodyStart + i + t[0].length,
             ),
@@ -1243,7 +1252,7 @@ export class PlaygroundCodeEditor extends LitElement {
           if (i === undefined) continue;
           if (w[0] === 'blue') {
             decos.push(
-              Decoration.mark({ class: 'cm-keyword' }).range(
+              Decoration.mark({class: 'cm-keyword'}).range(
                 bodyStart + i,
                 bodyStart + i + w[0].length,
               ),
@@ -1310,7 +1319,7 @@ export class PlaygroundCodeEditor extends LitElement {
     } else {
       position += `right:${Math.max(0, hostRect.right - spanRect.right)}px`;
     }
-    this._tooltipDiagnostic = { diagnostic, position };
+    this._tooltipDiagnostic = {diagnostic, position};
   };
 }
 

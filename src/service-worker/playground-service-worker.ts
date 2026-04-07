@@ -12,9 +12,9 @@ import {
   ServiceWorkerAPI,
   FileAPI,
 } from '../shared/worker-api.js';
-import { expose } from 'comlink';
-import { Deferred } from '../shared/deferred.js';
-import { serviceWorkerHash } from '../shared/version.js';
+import {expose} from 'comlink';
+import {Deferred} from '../shared/deferred.js';
+import {serviceWorkerHash} from '../shared/version.js';
 import * as parse5 from 'parse5';
 
 declare var self: ServiceWorkerGlobalScope;
@@ -34,9 +34,9 @@ const addLineAnchorsToHtml = (html: string): string => {
         tagName?: unknown;
         attrs?: unknown;
         childNodes?: unknown;
-        content?: { childNodes?: unknown };
-        templateContent?: { childNodes?: unknown };
-        sourceCodeLocation?: { startLine?: unknown };
+        content?: {childNodes?: unknown};
+        templateContent?: {childNodes?: unknown};
+        sourceCodeLocation?: {startLine?: unknown};
       };
 
       const loc = n.sourceCodeLocation;
@@ -46,13 +46,16 @@ const addLineAnchorsToHtml = (html: string): string => {
         loc &&
         typeof loc.startLine === 'number'
       ) {
-        const attrs = ((n.attrs as Array<{ name: string; value: string }>) ??
-          []) as Array<{ name: string; value: string }>;
+        const attrs = ((n.attrs as Array<{name: string; value: string}>) ??
+          []) as Array<{name: string; value: string}>;
         if (!Array.isArray(n.attrs)) {
           n.attrs = attrs;
         }
         if (!attrs.some((a) => a.name === 'data-playground-line')) {
-          attrs.push({ name: 'data-playground-line', value: String(loc.startLine) });
+          attrs.push({
+            name: 'data-playground-line',
+            value: String(loc.startLine),
+          });
         }
       }
 
@@ -128,7 +131,7 @@ const getFileApi = async (sessionId: string): Promise<FileAPI | undefined> => {
   }
   deferred = new Deferred();
   fileAPIs.set(sessionId, deferred);
-  const missingMessage: PlaygroundMessage = { type: MISSING_FILE_API };
+  const missingMessage: PlaygroundMessage = {type: MISSING_FILE_API};
   client.postMessage(missingMessage);
   return deferred.promise;
 };
@@ -142,10 +145,10 @@ const getFile = async (_e: FetchEvent, path: string, sessionId: SessionID) => {
   }
   const fileOrError = await fileAPI.getFile(path);
   if ('status' in fileOrError) {
-    const { body, status } = fileOrError;
-    return new Response(body, { status });
+    const {body, status} = fileOrError;
+    return new Response(body, {status});
   }
-  const { content, contentType } = fileOrError;
+  const {content, contentType} = fileOrError;
 
   // Preserve preview scroll position across reloads.
   //
@@ -513,13 +516,13 @@ const getFile = async (_e: FetchEvent, path: string, sessionId: SessionID) => {
   if (contentType) {
     headers.set('Content-Type', contentType);
   }
-  return new Response(responseBody, { headers });
+  return new Response(responseBody, {headers});
 };
 
 const onFetch = (e: FetchEvent) => {
   const url = e.request.url;
   if (url.startsWith(self.registration.scope)) {
-    const { filePath, sessionId } = parseScopedUrl(url);
+    const {filePath, sessionId} = parseScopedUrl(url);
     if (sessionId !== undefined) {
       e.respondWith(getFile(e, filePath!, sessionId));
     }
@@ -561,7 +564,7 @@ const onActivate = (event: ExtendableEvent) => {
 };
 
 const onMessage = (
-  e: Omit<ExtendableMessageEvent, 'data'> & { data: PlaygroundMessage },
+  e: Omit<ExtendableMessageEvent, 'data'> & {data: PlaygroundMessage},
 ) => {
   // Receive a handshake message from a page and setup Comlink.
   if (e.data.type === CONNECT_SW_TO_PROJECT) {

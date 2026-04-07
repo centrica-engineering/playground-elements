@@ -4,16 +4,16 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { html, css, PropertyValues } from 'lit';
-import { customElement, property, query } from 'lit/decorators.js';
-import { live } from 'lit/directives/live.js';
+import {html, css, PropertyValues} from 'lit';
+import {customElement, property, query} from 'lit/decorators.js';
+import {live} from 'lit/directives/live.js';
 
 import './playground-code-editor.js';
-import { PlaygroundConnectedElement } from './playground-connected-element.js';
+import {PlaygroundConnectedElement} from './playground-connected-element.js';
 
-import { PlaygroundProject } from './playground-project.js';
-import { PlaygroundCodeEditor } from './playground-code-editor.js';
-import { CodeEditorChangeData } from './shared/worker-api.js';
+import {PlaygroundProject} from './playground-project.js';
+import {PlaygroundCodeEditor} from './playground-code-editor.js';
+import {CodeEditorChangeData} from './shared/worker-api.js';
 
 /**
  * A text editor associated with a &lt;playground-project&gt;.
@@ -58,13 +58,13 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
    * If true, display a left-hand-side gutter with line numbers. Default false
    * (hidden).
    */
-  @property({ type: Boolean, attribute: 'line-numbers' })
+  @property({type: Boolean, attribute: 'line-numbers'})
   lineNumbers = false;
 
   /**
    * If true, wrap for long lines. Default false
    */
-  @property({ type: Boolean, attribute: 'line-wrapping' })
+  @property({type: Boolean, attribute: 'line-wrapping'})
   lineWrapping = false;
 
   /**
@@ -85,13 +85,13 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
   /**
    * If true, this editor is not editable.
    */
-  @property({ type: Boolean, reflect: true })
+  @property({type: Boolean, reflect: true})
   readonly = false;
 
   /**
    * If true, will disable code completions in the code-editor.
    */
-  @property({ type: Boolean, attribute: 'no-completions' })
+  @property({type: Boolean, attribute: 'no-completions'})
   noCompletions = false;
 
   private get _files() {
@@ -141,21 +141,21 @@ export class PlaygroundFileEditor extends PlaygroundConnectedElement {
             <playground-code-editor
               exportparts="diagnostic-tooltip, dialog"
               .value=${
-          // We need live() because the lit's dirty-checking value for
-          // content is not updated by user edits.
-          live(this._currentFile?.content ?? '')
-          }
+                // We need live() because the lit's dirty-checking value for
+                // content is not updated by user edits.
+                live(this._currentFile?.content ?? '')
+              }
               .documentKey=${this._currentFile}
               .type=${this._currentFile
-            ? mimeTypeToTypeEnum(this._currentFile.contentType)
-            : undefined}
+                ? mimeTypeToTypeEnum(this._currentFile.contentType)
+                : undefined}
               .lineNumbers=${this.lineNumbers}
               .lineWrapping=${this.lineWrapping}
               .readonly=${this.readonly || !this._currentFile}
               .pragmas=${this.pragmas}
               .diagnostics=${this._project?.diagnostics?.get(
-              this._currentFile?.name ?? '',
-            )}
+                this._currentFile?.name ?? '',
+              )}
               .noCompletions=${this.noCompletions}
               @change=${this._onEdit}
               @cursor-position-changed=${this._onCursorPositionChanged}

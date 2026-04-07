@@ -4,14 +4,14 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { test, expect } from '@playwright/test';
-import { startDevServer } from '@web/dev-server';
-import { readFile } from 'fs/promises';
+import {test, expect} from '@playwright/test';
+import {startDevServer} from '@web/dev-server';
+import {readFile} from 'fs/promises';
 // eslint-disable-next-line import/extensions
-import { Deferred } from '../../shared/deferred.js';
+import {Deferred} from '../../shared/deferred.js';
 
-import type { Page } from 'playwright';
-import type { DevServer, Plugin } from '@web/dev-server-core';
+import type {Page} from 'playwright';
+import type {DevServer, Plugin} from '@web/dev-server-core';
 
 const indexHtml = `
 <!DOCTYPE html>
@@ -87,7 +87,7 @@ test.describe('service worker', () => {
     if (versionMatches.length !== 1) {
       throw new Error(
         'Expected 1 version string in playground-service-worker.js. ' +
-        `Found ${versionMatches.length}.`,
+          `Found ${versionMatches.length}.`,
       );
     }
     const hex = versionMatches[0].groups?.['hex'];
@@ -122,7 +122,7 @@ test.describe('service worker', () => {
         } else {
           body = body.replace(originalSwVersion, expectedVersion);
         }
-        return { body };
+        return {body};
       },
 
       transformCacheKey() {
@@ -182,7 +182,7 @@ test.describe('service worker', () => {
           const texts = await getPreviewIframeBodyTexts(page);
           return texts.some((t) => t.startsWith(expected));
         },
-        { timeout: 5000 },
+        {timeout: 5000},
       )
       .toBe(true);
   };
@@ -201,7 +201,7 @@ test.describe('service worker', () => {
       }),
     );
 
-  test('simple fresh load', async ({ browser }) => {
+  test('simple fresh load', async ({browser}) => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
 
@@ -210,7 +210,7 @@ test.describe('service worker', () => {
     await expectIframeServesVersion(page, 'new');
   });
 
-  test('updates after tab reload', async ({ browser }) => {
+  test('updates after tab reload', async ({browser}) => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
 
@@ -223,7 +223,7 @@ test.describe('service worker', () => {
     await expectIframeServesVersion(page, 'new');
   });
 
-  test('two tabs at same version', async ({ browser }) => {
+  test('two tabs at same version', async ({browser}) => {
     const ctx = await browser.newContext();
     const page1 = await ctx.newPage();
     const page2 = await ctx.newPage();
@@ -235,7 +235,7 @@ test.describe('service worker', () => {
     await expectIframeServesVersion(page2, 'new');
   });
 
-  test('two tabs both update after tab reload', async ({ browser }) => {
+  test('two tabs both update after tab reload', async ({browser}) => {
     const ctx = await browser.newContext();
     const page1 = await ctx.newPage();
     const page2 = await ctx.newPage();
@@ -253,7 +253,7 @@ test.describe('service worker', () => {
     await expectIframeServesVersion(page2, 'new');
   });
 
-  test('two tabs at different versions', async ({ browser }) => {
+  test('two tabs at different versions', async ({browser}) => {
     const ctx = await browser.newContext();
     const page1 = await ctx.newPage();
     const page2 = await ctx.newPage();
@@ -274,7 +274,7 @@ test.describe('service worker', () => {
     await expectIframeServesVersion(page2, 'old');
   });
 
-  test('recover from outdated service worker', async ({ browser }) => {
+  test('recover from outdated service worker', async ({browser}) => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
 

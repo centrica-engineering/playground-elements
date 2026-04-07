@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { html, css, PropertyValues } from 'lit';
-import { customElement, property, query } from 'lit/decorators.js';
+import {html, css, PropertyValues} from 'lit';
+import {customElement, property, query} from 'lit/decorators.js';
 
 import '@material/web/menu/menu.js';
 import '@material/web/menu/menu-item.js';
@@ -14,11 +14,11 @@ import '@material/web/textfield/outlined-text-field.js';
 import '@material/web/button/filled-button.js';
 import '@material/web/button/outlined-button.js';
 
-import type { Menu } from '@material/web/menu/menu.js';
-import type { MdOutlinedTextField } from '@material/web/textfield/outlined-text-field.js';
-import type { MdDialog } from '@material/web/dialog/dialog.js';
+import type {Menu} from '@material/web/menu/menu.js';
+import type {MdOutlinedTextField} from '@material/web/textfield/outlined-text-field.js';
+import type {MdDialog} from '@material/web/dialog/dialog.js';
 
-import { PlaygroundConnectedElement } from './playground-connected-element.js';
+import {PlaygroundConnectedElement} from './playground-connected-element.js';
 
 /**
  * Floating controls for creating, deleting, and renaming files in playground
@@ -53,7 +53,7 @@ export class PlaygroundFileSystemControls extends PlaygroundConnectedElement {
   /**
    * The element that these controls will be positioned adjacent to.
    */
-  @property({ attribute: false })
+  @property({attribute: false})
   anchorElement?: HTMLElement;
 
   /**
@@ -156,8 +156,8 @@ export class PlaygroundFileSystemControls extends PlaygroundConnectedElement {
             class="submit-button"
             ?disabled=${!this._filenameInputValid}
             @click=${this.state === 'rename'
-        ? this._onSubmitRename
-        : this._onSubmitNewFile}
+              ? this._onSubmitRename
+              : this._onSubmitNewFile}
             >${this.state === 'rename' ? 'Rename' : 'Create'}</md-filled-button
           >
         </div>
@@ -275,8 +275,8 @@ export class PlaygroundFileSystemControls extends PlaygroundConnectedElement {
     if (this._project && filename) {
       this._project.addFile(filename);
       this.dispatchEvent(
-        new CustomEvent<{ filename: string }>('newFile', {
-          detail: { filename },
+        new CustomEvent<{filename: string}>('newFile', {
+          detail: {filename},
         }),
       );
     }
