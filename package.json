@@ -251,7 +251,7 @@
     "@web/test-runner-puppeteer": "^0.18.0",
     "clean-css": "^5.3.3",
     "es-module-lexer": "^2.0.0",
-    "eslint": "^9.39.2",
+    "eslint": "^10.0.3",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-no-only-tests": "^3.3.0",
     "playwright": "^1.57.0",
