@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-import { LitElement } from 'lit';
-import { property, state } from 'lit/decorators.js';
-import { PlaygroundProject } from './playground-project.js';
+import {LitElement} from 'lit';
+import {property, state} from 'lit/decorators.js';
+import {PlaygroundProject} from './playground-project.js';
 
 /**
  * Base class that connects an element to a playground-project element.
@@ -14,7 +14,7 @@ import { PlaygroundProject } from './playground-project.js';
 export class PlaygroundConnectedElement extends LitElement {
   /**
    * The project that this element is associated with. Either the
-    * `playground-project` node itself, or its `id` in the host scope.
+   * `playground-project` node itself, or its `id` in the host scope.
    */
   @property()
   set project(elementOrId: PlaygroundProject | string | undefined) {
@@ -46,7 +46,7 @@ export class PlaygroundConnectedElement extends LitElement {
   }
 
   /**
-    * The actual `playground-project` node, determined by the `project`
+   * The actual `playground-project` node, determined by the `project`
    * property.
    */
   @state()
